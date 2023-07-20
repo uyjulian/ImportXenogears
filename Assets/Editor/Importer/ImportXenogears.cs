@@ -9,7 +9,7 @@ public class FileEntry {
 	public string name;
 	public int pos;
 	public int size;
-};
+}
 
 public class Vertex : IComparable<Vertex> {
 	public int u, v;
@@ -52,7 +52,7 @@ public class Vertex : IComparable<Vertex> {
 		}
 		return nz.CompareTo(rhs.nz);
 	}
-};
+}
 
 public class Triangle : IComparable<Triangle> {
 	public int shader;
@@ -70,7 +70,7 @@ public class Triangle : IComparable<Triangle> {
 		}
 		return 0;
 	}
-};
+}
 
 public class XGShader : IEquatable<XGShader> {
 	public uint status;
@@ -103,17 +103,17 @@ public class XGShader : IEquatable<XGShader> {
 		}
 		return true;
 	}
-};
+}
 
 public class XGMesh {
 	public Mesh mesh;
 	public int[] materials;
-};
+}
 
 public class XGModel {
 	public List<XGMesh> meshes;
 	public List<XGShader> shaders;
-};
+}
 
 public class ImportXenogears : EditorWindow {
 	string filename = "";
