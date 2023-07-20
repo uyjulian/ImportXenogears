@@ -2236,7 +2236,7 @@ public class ImportXenogears : EditorWindow {
 		debugFeatures = EditorGUILayout.Foldout(debugFeatures, "Show Debug Features");
 		if (debugFeatures) {
 			if(GUILayout.Button ("Build package")) {
-				string [] files = new string[2];
+				string[] files = new string[2];
 				files[0] = "Assets/Editor";
 				files[1] = "Assets/Scripts";
 				AssetDatabase.ExportPackage(files, "../ImportXenogears.unitypackage", ExportPackageOptions.Recurse);
