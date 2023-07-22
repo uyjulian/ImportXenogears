@@ -121,11 +121,17 @@ public class ImportXenogears : EditorWindow {
 	string disc2 = "Xenogears2.img";
 	bool exportDiscs = true;
 	bool exportField = true;
+	string exportFieldIndices = "";
 	bool exportStage = true;
+	string exportStageIndices = "";
 	bool exportTerrain = true;
+	string exportTerrainIndices = "";
 	bool exportHeads = true;
+	string exportHeadIndices = "";
 	bool exportSlides = true;
+	string exportSlideIndices = "";
 	bool exportSceneModel = true;
+	string exportSceneModelIndices = "";
 	bool doExport = false;
 	bool debugFeatures = false;
 	
@@ -216,6 +222,16 @@ public class ImportXenogears : EditorWindow {
 
 	static string ToUnityPath(string path) {
 		return path.Replace ('\\', '/');
+	}
+
+	static void splitIndicesString(string str, List<uint> lst) {
+		string[] split = str.Split(new char[] { ',', ';', ':' });
+
+		foreach (string strsp in split) {
+			if (strsp.Length > 0) {
+				lst.Add((uint)(UInt32.Parse(strsp)));
+			}
+		}
 	}
 
 	static XGModel importFieldModel(byte[] data) {
@@ -2343,11 +2359,17 @@ public class ImportXenogears : EditorWindow {
         EditorGUILayout.EndToggleGroup ();
 		
         exportField = EditorGUILayout.Toggle ("Import Fields", exportField);
+        exportFieldIndices = EditorGUILayout.TextField ("Field Indices", exportFieldIndices);
 		exportStage = EditorGUILayout.Toggle ("Import Stages", exportStage);
+		exportStageIndices = EditorGUILayout.TextField ("Stage Indices", exportStageIndices);
 		exportTerrain = EditorGUILayout.Toggle ("Import Terrain", exportTerrain);
+		exportTerrainIndices = EditorGUILayout.TextField ("Terrain Indices", exportTerrainIndices);
 		exportHeads = EditorGUILayout.Toggle ("Import Heads", exportHeads);
+		exportHeadIndices = EditorGUILayout.TextField ("Field Indices", exportHeadIndices);
 		exportSlides = EditorGUILayout.Toggle ("Import Slides", exportSlides);
+		exportSlideIndices = EditorGUILayout.TextField ("Slide Indices", exportSlideIndices);
 		exportSceneModel = EditorGUILayout.Toggle ("Import Scene Models", exportSceneModel);
+		exportSceneModelIndices = EditorGUILayout.TextField ("Field Indices", exportSceneModelIndices);
 		
 		if (GUILayout.Button("Import")) {
 			doExport = true;
@@ -2378,8 +2400,12 @@ public class ImportXenogears : EditorWindow {
 					EditorPrefs.SetString("XGDisc2", disc2);
 				}
 				if (exportField) {
-					
+					List<uint> indicesList = new List<uint>();
+					splitIndicesString(exportFieldIndices, indicesList);
 					for(uint i=0; i<730; i++) {
+						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
+							continue;
+						}
 						importField (i);
 					}
 					exportField = false;
@@ -2388,7 +2414,12 @@ public class ImportXenogears : EditorWindow {
 					// importField (95);
 				}
 				if (exportStage) {
+					List<uint> indicesList = new List<uint>();
+					splitIndicesString(exportStageIndices, indicesList);
 					for(uint i=0; i<75; i++) {
+						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
+							continue;
+						}
 						importStage (i);
 					}
 					exportStage = false;
@@ -2396,28 +2427,48 @@ public class ImportXenogears : EditorWindow {
 	//					importStage (20);
 				}
 				if (exportTerrain) {
+					List<uint> indicesList = new List<uint>();
+					splitIndicesString(exportTerrainIndices, indicesList);
 					for(uint i=0; i<17; i++) {
+						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
+							continue;
+						}
 						importTerrain (i);
 					}
 					exportTerrain = false;
 					EditorPrefs.SetInt("XGExportTerrain", terrainVersion);
 				}
 				if (exportHeads) {
-					for(int i=0; i<91; i++) {
-						importTim(1, 9, i, "Heads");
+					List<uint> indicesList = new List<uint>();
+					splitIndicesString(exportHeadIndices, indicesList);
+					for(uint i=0; i<91; i++) {
+						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
+							continue;
+						}
+						importTim(1, 9, (int)i, "Heads");
 					}
 					exportHeads = false;
 					EditorPrefs.SetInt("XGExportHeads", headsVersion);
 				}
 				if (exportSlides) {
-					for(int i=0; i<88; i++) {
-						importTim(1, 14, i, "Slides");
+					List<uint> indicesList = new List<uint>();
+					splitIndicesString(exportSlideIndices, indicesList);
+					for(uint i=0; i<88; i++) {
+						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
+							continue;
+						}
+						importTim(1, 14, (int)i, "Slides");
 					}
 					exportSlides = false;
 					EditorPrefs.SetInt("XGExportSlides", slidesVersion);
 				}
 				if (exportSceneModel) {
+					List<uint> indicesList = new List<uint>();
+					splitIndicesString(exportSceneModelIndices, indicesList);
 					for(uint i=0; i<72; i++) {
+						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
+							continue;
+						}
 						importSceneModel(i);
 					}
 					exportSceneModel = false;
