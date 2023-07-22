@@ -1,0 +1,9 @@
+*.prefab
+*.dll
+*.exe
+*.unity
+*.asset
+*.mat
+*.texture2D
+*.mesh
+*.anim
