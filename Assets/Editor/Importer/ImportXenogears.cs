@@ -669,6 +669,16 @@ public class ImportXenogears : EditorWindow {
 				for(int j=0; j<height; j++) {
 					uint vramAddr = (uint)((pos_y + move_y + j) * 2048 + (pos_x + move_x) * 2);
 					uint texAddr = (uint)(offset + j * width * 2);
+					bool contains_nonzero = false;
+					for (int k=0; k<(width * 2); k++) {
+						if (textureData[texAddr + k] != 0) {
+							contains_nonzero = true;
+							break;
+						}
+					}
+					if (contains_nonzero == false) {
+						continue;
+					}
 					for (int k=0; k<(width * 2); k++) {
 		    			vram[vramAddr++] = textureData[texAddr++];
 					}
@@ -1301,6 +1311,16 @@ public class ImportXenogears : EditorWindow {
 			for (int j=0; j < height; j++) {
 				uint vramPos = (uint)((pos_y + move_y + j) * 2048 + (pos_x + move_x) * 2);
 				uint dataPos = (uint)(header + 16 + j * width * 2);
+				bool contains_nonzero = false;
+				for(int k=0; k<width*2; k++) {
+					if (textureData[dataPos + k] != 0) {
+						contains_nonzero = true;
+						break;
+					}
+				}
+				if (contains_nonzero == false) {
+					continue;
+				}
 				for(int k=0; k<width*2; k++) {
 					vram[vramPos++] = textureData[dataPos++]; 
 				}
@@ -2070,6 +2090,16 @@ public class ImportXenogears : EditorWindow {
 			
 			for (int j=0; j < image_height; j++) {
 				uint vramPos = (uint)((image_y + j) * 2048 + image_x * 2);
+				bool contains_nonzero = false;
+				for(int k=0; k<image_width*2; k++) {
+					if (data[ofs + k] != 0) {
+						contains_nonzero = true;
+						break;
+					}
+				}
+				if (contains_nonzero == false) {
+					continue;
+				}
 				for(int k=0; k<image_width*2; k++) {
 					vram[vramPos++] = data[ofs++]; 
 				}
