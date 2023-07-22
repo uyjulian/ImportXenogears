@@ -793,6 +793,27 @@ public class ImportXenogears : EditorWindow {
 		} 
 		string fieldSceneRoot = AssetDatabase.GUIDToAssetPath(fieldSceneGuid);
 
+		// Create Mesh Root
+		string fieldMeshGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(fieldRoot, "Mesh")));
+		if (fieldMeshGuid.Length == 0) {
+			fieldMeshGuid = AssetDatabase.CreateFolder(fieldRoot, "Mesh");
+		} 
+		string fieldMeshRoot = AssetDatabase.GUIDToAssetPath(fieldMeshGuid);
+
+		// Create Texture Root
+		string fieldTextureGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(fieldRoot, "Texture")));
+		if (fieldTextureGuid.Length == 0) {
+			fieldTextureGuid = AssetDatabase.CreateFolder(fieldRoot, "Texture");
+		} 
+		string fieldTextureRoot = AssetDatabase.GUIDToAssetPath(fieldTextureGuid);
+
+		// Create Material Root
+		string fieldMaterialGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(fieldRoot, "Material")));
+		if (fieldMaterialGuid.Length == 0) {
+			fieldMaterialGuid = AssetDatabase.CreateFolder(fieldRoot, "Material");
+		} 
+		string fieldMaterialRoot = AssetDatabase.GUIDToAssetPath(fieldMaterialGuid);
+
 		// Create Scene
 		EditorApplication.NewScene();
 		
@@ -810,15 +831,17 @@ public class ImportXenogears : EditorWindow {
 		
 		UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab (ToUnityPath(Path.Combine(fieldModelRoot, "field" + fileIndex + ".prefab")));
 		
+		int mesh_count = 0;
 		XGModel model = importFieldModel(modelData);
 		foreach (XGMesh xgMesh in model.meshes) {
-			AssetDatabase.AddObjectToAsset(xgMesh.mesh, prefab);
+			AssetDatabase.CreateAsset(xgMesh.mesh, ToUnityPath(Path.Combine(fieldMeshRoot, "field" + fileIndex + "_mesh" + mesh_count + ".mesh")));
+			mesh_count += 1;
 		}
 		
 		Texture2D[] textures = importFieldTextures(textureData, model.shaders);
 		for(int i=0; i<textures.Length; i++) {
 			if (textures[i] != null) {
-				AssetDatabase.AddObjectToAsset(textures[i], prefab);
+				AssetDatabase.CreateAsset(textures[i], ToUnityPath(Path.Combine(fieldTextureRoot, "field" + fileIndex + "_texture" + i + ".texture2D")));
 			}
 		}
 		
@@ -837,7 +860,7 @@ public class ImportXenogears : EditorWindow {
 			if (textures[i] != null) {
 				materials[i].mainTexture = textures[i];
 			}
-			AssetDatabase.AddObjectToAsset(materials[i], prefab);
+			AssetDatabase.CreateAsset(materials[i], ToUnityPath(Path.Combine(fieldMaterialRoot, "field" + fileIndex + "_" + materials[i].name + ".mat")));
 		}
 		
 		GameObject gameObject = new GameObject("field");
@@ -1482,7 +1505,35 @@ public class ImportXenogears : EditorWindow {
 			stageSceneGuid = AssetDatabase.CreateFolder(stageRoot, "Scene");
 		} 
 		string stageSceneRoot = AssetDatabase.GUIDToAssetPath(stageSceneGuid);
-		
+
+		// Create Mesh Root
+		string stageMeshGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Mesh")));
+		if (stageMeshGuid.Length == 0) {
+			stageMeshGuid = AssetDatabase.CreateFolder(stageRoot, "Mesh");
+		} 
+		string stageMeshRoot = AssetDatabase.GUIDToAssetPath(stageMeshGuid);
+
+		// Create Texture Root
+		string stageTextureGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Texture")));
+		if (stageTextureGuid.Length == 0) {
+			stageTextureGuid = AssetDatabase.CreateFolder(stageRoot, "Texture");
+		} 
+		string stageTextureRoot = AssetDatabase.GUIDToAssetPath(stageTextureGuid);
+
+		// Create Material Root
+		string stageMaterialGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Material")));
+		if (stageMaterialGuid.Length == 0) {
+			stageMaterialGuid = AssetDatabase.CreateFolder(stageRoot, "Material");
+		} 
+		string stageMaterialRoot = AssetDatabase.GUIDToAssetPath(stageMaterialGuid);
+
+		// Create Animation Root
+		string stageAnimationGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Animation")));
+		if (stageAnimationGuid.Length == 0) {
+			stageAnimationGuid = AssetDatabase.CreateFolder(stageRoot, "Animation");
+		} 
+		string stageAnimationRoot = AssetDatabase.GUIDToAssetPath(stageAnimationGuid);
+
 		uint diskIndex = 1; // there are disk 1 and disk 2
 		uint dirIndex = 12; // 0-based index
 			
@@ -1498,15 +1549,17 @@ public class ImportXenogears : EditorWindow {
 
 		UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab (ToUnityPath(Path.Combine(stageModelRoot, "scenemodel" + fileIndex + ".prefab")));
 
+		int mesh_count = 0;
 		XGModel model = importStageModel(data);	
 		foreach (XGMesh xgMesh in model.meshes) {
-			AssetDatabase.AddObjectToAsset(xgMesh.mesh, prefab);
+			AssetDatabase.CreateAsset(xgMesh.mesh, ToUnityPath(Path.Combine(stageMeshRoot, "scenemodel" + fileIndex + "_mesh" + mesh_count + ".mesh")));
+			mesh_count += 1;
 		}
 
 		Texture2D[] textures = importStageTextures(data, model.shaders);
 		for(int i=0; i<textures.Length; i++) {
 			if (textures[i] != null) {
-				AssetDatabase.AddObjectToAsset(textures[i], prefab);
+				AssetDatabase.CreateAsset(textures[i], ToUnityPath(Path.Combine(stageTextureRoot, "scenemodel" + fileIndex + "_texture" + i + ".texture2D")));
 			}
 		}
 		
@@ -1526,7 +1579,7 @@ public class ImportXenogears : EditorWindow {
 			if (textures[i] != null) {
 				materials[i].mainTexture = textures[i];
 			}
-			AssetDatabase.AddObjectToAsset(materials[i], prefab);
+			AssetDatabase.CreateAsset(materials[i], ToUnityPath(Path.Combine(stageMaterialRoot, "scenemodel" + fileIndex + "_" + materials[i].name + ".mat")));
 		}
 		
 		List<int> hierarchy = new List<int>();
@@ -1570,7 +1623,7 @@ public class ImportXenogears : EditorWindow {
 		
 		AnimationClip[] animationClip = importAnimationClips(items, anim);
 		for (int i=0; i<animationClip.Length; i++) {
-			AssetDatabase.AddObjectToAsset(animationClip[i], prefab);
+			AssetDatabase.CreateAsset(animationClip[i], ToUnityPath(Path.Combine(stageAnimationRoot, "scenemodel" + fileIndex + "_animation" + i + ".anim")));
 		}
 		
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
@@ -1603,7 +1656,28 @@ public class ImportXenogears : EditorWindow {
 			stageSceneGuid = AssetDatabase.CreateFolder(stageRoot, "Scene");
 		} 
 		string stageSceneRoot = AssetDatabase.GUIDToAssetPath(stageSceneGuid);
-		
+
+		// Create Mesh Root
+		string stageMeshGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Mesh")));
+		if (stageMeshGuid.Length == 0) {
+			stageMeshGuid = AssetDatabase.CreateFolder(stageRoot, "Mesh");
+		} 
+		string stageMeshRoot = AssetDatabase.GUIDToAssetPath(stageMeshGuid);
+
+		// Create Texture Root
+		string stageTextureGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Texture")));
+		if (stageTextureGuid.Length == 0) {
+			stageTextureGuid = AssetDatabase.CreateFolder(stageRoot, "Texture");
+		} 
+		string stageTextureRoot = AssetDatabase.GUIDToAssetPath(stageTextureGuid);
+
+		// Create Material Root
+		string stageMaterialGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(stageRoot, "Material")));
+		if (stageMaterialGuid.Length == 0) {
+			stageMaterialGuid = AssetDatabase.CreateFolder(stageRoot, "Material");
+		} 
+		string stageMaterialRoot = AssetDatabase.GUIDToAssetPath(stageMaterialGuid);
+
 		uint diskIndex = 1; // there are disk 1 and disk 2
 		uint dirIndex = 18; // 0-based index
 			
@@ -1617,15 +1691,17 @@ public class ImportXenogears : EditorWindow {
 
 		UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab (ToUnityPath(Path.Combine(stageModelRoot, "stage" + fileIndex + ".prefab")));
 
+		int mesh_count = 0;
 		XGModel model = importStageModel(data);	
 		foreach (XGMesh xgMesh in model.meshes) {
-			AssetDatabase.AddObjectToAsset(xgMesh.mesh, prefab);
+			AssetDatabase.CreateAsset(xgMesh.mesh, ToUnityPath(Path.Combine(stageMeshRoot, "stage" + fileIndex + "_mesh" + mesh_count + ".mesh")));
+			mesh_count += 1;
 		}
 
 		Texture2D[] textures = importStageTextures(data, model.shaders);
 		for(int i=0; i<textures.Length; i++) {
 			if (textures[i] != null) {
-				AssetDatabase.AddObjectToAsset(textures[i], prefab);
+				AssetDatabase.CreateAsset(textures[i], ToUnityPath(Path.Combine(stageTextureRoot, "stage" + fileIndex + "_texture" + i + ".texture2D")));
 			}
 		}
 		
@@ -1645,7 +1721,7 @@ public class ImportXenogears : EditorWindow {
 			if (textures[i] != null) {
 				materials[i].mainTexture = textures[i];
 			}
-			AssetDatabase.AddObjectToAsset(materials[i], prefab);
+			AssetDatabase.CreateAsset(materials[i], ToUnityPath(Path.Combine(stageMaterialRoot, "stage" + fileIndex + "_" + materials[i].name + ".mat")));
 		}
 		
 		List<int> hierarchy = new List<int>();
@@ -1715,6 +1791,20 @@ public class ImportXenogears : EditorWindow {
 		} 
 		string terrainSceneRoot = AssetDatabase.GUIDToAssetPath(terrainSceneGuid);
 		
+		// Create Terrain Root
+		string terrainTerrainGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(terrainRoot, "Terrain")));
+		if (terrainTerrainGuid.Length == 0) {
+			terrainTerrainGuid = AssetDatabase.CreateFolder(terrainRoot, "Terrain");
+		} 
+		string terrainTerrainRoot = AssetDatabase.GUIDToAssetPath(terrainTerrainGuid);
+
+		// Create Texture Root
+		string terrainTextureGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(terrainRoot, "Texture")));
+		if (terrainTextureGuid.Length == 0) {
+			terrainTextureGuid = AssetDatabase.CreateFolder(terrainRoot, "Texture");
+		} 
+		string terrainTextureRoot = AssetDatabase.GUIDToAssetPath(terrainTextureGuid);
+
 		uint diskIndex = 1; // there are disk 1 and disk 2
 		uint dirIndex = 26 + fileIndex; // 0-based index
 			
@@ -1777,7 +1867,7 @@ public class ImportXenogears : EditorWindow {
 				texture.wrapMode = TextureWrapMode.Clamp;
 				texture.SetPixels(image);
 				texture.Apply();
-				AssetDatabase.AddObjectToAsset(texture, prefab);
+				AssetDatabase.CreateAsset(texture, ToUnityPath(Path.Combine(terrainTextureRoot, "worldmap" + fileIndex + "_texture0.texture2D")));
 				
 				SplatPrototype splatPrototype = new SplatPrototype();
 				splatPrototype.texture = texture;
@@ -1823,7 +1913,7 @@ public class ImportXenogears : EditorWindow {
 		terrainData.alphamapResolution = 64;
 		terrainData.splatPrototypes = splatPrototypes;
 		
-		AssetDatabase.AddObjectToAsset(terrainData, prefab);
+		AssetDatabase.CreateAsset(terrainData, ToUnityPath(Path.Combine(terrainTerrainRoot, "worldmap" + fileIndex + "_terrain0.asset")));
 
 		GameObject gameObject = new GameObject("worlmap");
 		Terrain terrain = (Terrain)gameObject.AddComponent(typeof(Terrain));
