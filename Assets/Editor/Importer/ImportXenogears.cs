@@ -2229,7 +2229,7 @@ public class ImportXenogears : EditorWindow {
 		exportSlides = EditorGUILayout.Toggle ("Import Slides", exportSlides);
 		exportSlideIndices = EditorGUILayout.TextField ("Slide Indices", exportSlideIndices);
 		exportSceneModel = EditorGUILayout.Toggle ("Import Scene Models", exportSceneModel);
-		exportSceneModelIndices = EditorGUILayout.TextField ("Field Indices", exportSceneModelIndices);
+		exportSceneModelIndices = EditorGUILayout.TextField ("Scene Model Indices", exportSceneModelIndices);
 		
 		if (GUILayout.Button("Import")) {
 			doExport = true;
