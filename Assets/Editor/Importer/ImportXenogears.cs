@@ -106,7 +106,7 @@ public class XGShader : IEquatable<XGShader> {
 }
 
 public class XGMesh {
-	public Mesh mesh;
+	public Mesh[] meshes;
 	public int[] materials;
 }
 
@@ -618,13 +618,7 @@ public class ImportXenogears : EditorWindow {
 			}
 			
 			XGMesh xgMesh = new XGMesh();
-			xgMesh.mesh = new Mesh();
-			xgMesh.mesh.name = "part" + partIndex;
-			xgMesh.mesh.vertices = vertices;
-			xgMesh.mesh.normals = normals;
-			xgMesh.mesh.uv = uv;
-			xgMesh.mesh.colors = colors;
-			xgMesh.mesh.subMeshCount = groupIndex;
+			xgMesh.meshes = new Mesh[groupIndex];
 			xgMesh.materials = new int[groupIndex];
 			
 			triangleStart = 0;
@@ -634,7 +628,15 @@ public class ImportXenogears : EditorWindow {
 				for(int j=0; j<groups[i] * 3; j++) {
 					submesh[j] = triangles[triangleStart * 3 + j];	
 				}
-				xgMesh.mesh.SetTriangles(submesh, i);	
+				Mesh mesh = new Mesh();
+				mesh.name = "part" + partIndex + "_group" + groupIndex;
+				mesh.vertices = vertices;
+				mesh.normals = normals;
+				mesh.uv = uv;
+				mesh.colors = colors;
+				mesh.subMeshCount = 1;
+				mesh.SetTriangles(submesh, 0);	
+				xgMesh.meshes[i] = mesh;
 				triangleStart += groups[i];
 			}
 			
@@ -801,14 +803,13 @@ public class ImportXenogears : EditorWindow {
 		return newDirRoot;
 	}
 
-	static void saveMeshAssets(XGModel model, XGMesh[] meshes, string rootDir, string namePrefix) {
+	static void saveMeshAssets(XGModel model, string rootDir, string namePrefix) {
 		int mesh_count = 0;
 		foreach (XGMesh xgMesh in model.meshes) {
-			meshes[mesh_count] = xgMesh;
+			for (int i = 0; i < xgMesh.meshes.Length; i += 1) {
+				AssetDatabase.CreateAsset(xgMesh.meshes[i], ToUnityPath(Path.Combine(rootDir, namePrefix + "_meshitem" + mesh_count + "_mesh" + i + ".mesh")));
+			}
 			mesh_count += 1;
-		}
-		for(int i=0; i<meshes.Length; i++) {
-			AssetDatabase.CreateAsset(meshes[i].mesh, ToUnityPath(Path.Combine(rootDir, namePrefix + "_mesh" + i + ".mesh")));
 		}
 	}
 
@@ -877,8 +878,7 @@ public class ImportXenogears : EditorWindow {
 		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
 
 		XGModel model = importFieldModel(modelData);
-		XGMesh[] meshes = new XGMesh[model.meshes.Count];
-		saveMeshAssets(model, meshes, stageMeshRoot, namePrefix);
+		saveMeshAssets(model, stageMeshRoot, namePrefix);
 
 		Texture2D[] textures = importFieldTextures(textureData, model.shaders);
 		saveTextureAssets(textures, stageTextureRoot, namePrefix);
@@ -910,15 +910,17 @@ public class ImportXenogears : EditorWindow {
 			}
 			xgFieldNode.index = index;
 			if ((flags & ((1<<5)|(1<<6)/*|(1<<7)|(1<<8)*/)) == 0) {
-				XGMesh xgMesh = meshes[index]; 
-				MeshFilter meshFilter = (MeshFilter)item.AddComponent(typeof(MeshFilter));
-				MeshRenderer renderer = (MeshRenderer)item.AddComponent(typeof(MeshRenderer));
-				meshFilter.mesh = xgMesh.mesh;
-				Material[] meshMaterials = new Material[xgMesh.materials.Length];
-				for(int i=0; i<xgMesh.materials.Length; i++) {
-					meshMaterials[i] = materials[xgMesh.materials[i]];
+				XGMesh xgMesh = model.meshes[index]; 
+				for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
+					GameObject meshNode = new GameObject(namePrefix + "_item" + itemIndex + "_mesh" + ii);
+					meshNode.transform.parent = item.transform;
+					MeshFilter meshFilter = (MeshFilter)meshNode.AddComponent(typeof(MeshFilter));
+					MeshRenderer renderer = (MeshRenderer)meshNode.AddComponent(typeof(MeshRenderer));
+					meshFilter.mesh = xgMesh.meshes[ii];
+					Material[] meshMaterials = new Material[1];
+					meshMaterials[0] = materials[xgMesh.materials[ii]];
+					renderer.materials = meshMaterials;
 				}
-				renderer.materials = meshMaterials;
 			}
 		}
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
@@ -1313,13 +1315,7 @@ public class ImportXenogears : EditorWindow {
 			}
 			
 			XGMesh xgMesh = new XGMesh();
-			xgMesh.mesh = new Mesh();
-			xgMesh.mesh.name = "part"+blockIndex;
-			xgMesh.mesh.vertices = vertices;
-			xgMesh.mesh.normals = normals;
-			xgMesh.mesh.uv = uv;
-			xgMesh.mesh.colors = colors;
-			xgMesh.mesh.subMeshCount = groupIndex;
+			xgMesh.meshes = new Mesh[groupIndex];
 			xgMesh.materials = new int[groupIndex];
 			
 			triangleStart = 0;
@@ -1329,7 +1325,15 @@ public class ImportXenogears : EditorWindow {
 				for(int j=0; j<groups[i] * 3; j++) {
 					submesh[j] = triangles[triangleStart * 3 + j];	
 				}
-				xgMesh.mesh.SetTriangles(submesh, i);	
+				Mesh mesh = new Mesh();
+				mesh.name = "part" + blockIndex + "_group" + groupIndex;
+				mesh.vertices = vertices;
+				mesh.normals = normals;
+				mesh.uv = uv;
+				mesh.colors = colors;
+				mesh.subMeshCount = 1;
+				mesh.SetTriangles(submesh, 0);	
+				xgMesh.meshes[i] = mesh;
 				triangleStart += groups[i];
 			}
 			
@@ -1534,8 +1538,7 @@ public class ImportXenogears : EditorWindow {
 		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
 
 		XGModel model = importStageModel(data);	
-		XGMesh[] meshes = new XGMesh[model.meshes.Count];
-		saveMeshAssets(model, meshes, stageMeshRoot, namePrefix);
+		saveMeshAssets(model, stageMeshRoot, namePrefix);
 
 		Texture2D[] textures = importStageTextures(data, model.shaders);
 		saveTextureAssets(textures, stageTextureRoot, namePrefix);
@@ -1565,14 +1568,16 @@ public class ImportXenogears : EditorWindow {
 			int blockIndex = hierarchy[itemIndex*2+0];
 			if (blockIndex >= 0) {
 				XGMesh xgMesh = model.meshes[blockIndex]; 
-				MeshFilter meshFilter = (MeshFilter)item.AddComponent(typeof(MeshFilter));
-				MeshRenderer renderer = (MeshRenderer)item.AddComponent(typeof(MeshRenderer));
-				meshFilter.mesh = xgMesh.mesh;
-				Material[] meshMaterials = new Material[xgMesh.materials.Length];
-				for(int i=0; i<xgMesh.materials.Length; i++) {
-					meshMaterials[i] = materials[xgMesh.materials[i]];
+				for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
+					GameObject meshNode = new GameObject(namePrefix + "_item" + itemIndex + "_mesh" + ii);
+					meshNode.transform.parent = item.transform;
+					MeshFilter meshFilter = (MeshFilter)meshNode.AddComponent(typeof(MeshFilter));
+					MeshRenderer renderer = (MeshRenderer)meshNode.AddComponent(typeof(MeshRenderer));
+					meshFilter.mesh = xgMesh.meshes[ii];
+					Material[] meshMaterials = new Material[1];
+					meshMaterials[0] = materials[xgMesh.materials[ii]];
+					renderer.materials = meshMaterials;
 				}
-				renderer.materials = meshMaterials;
 			}
 			items[itemIndex] = item;
 		}
@@ -1618,8 +1623,7 @@ public class ImportXenogears : EditorWindow {
 		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
 
 		XGModel model = importStageModel(data);	
-		XGMesh[] meshes = new XGMesh[model.meshes.Count];
-		saveMeshAssets(model, meshes, stageMeshRoot, namePrefix);
+		saveMeshAssets(model, stageMeshRoot, namePrefix);
 
 		Texture2D[] textures = importStageTextures(data, model.shaders);
 		saveTextureAssets(textures, stageTextureRoot, namePrefix);
@@ -1646,14 +1650,16 @@ public class ImportXenogears : EditorWindow {
 		for(int itemIndex=0; itemIndex < items.Length; itemIndex++) {
 			XGMesh xgMesh = model.meshes[hierarchy[itemIndex*2+0]]; 
 			GameObject item = new GameObject(namePrefix + "_item" + itemIndex);
-			MeshFilter meshFilter = (MeshFilter)item.AddComponent(typeof(MeshFilter));
-			MeshRenderer renderer = (MeshRenderer)item.AddComponent(typeof(MeshRenderer));
-			meshFilter.mesh = xgMesh.mesh;
-			Material[] meshMaterials = new Material[xgMesh.materials.Length];
-			for(int i=0; i<xgMesh.materials.Length; i++) {
-				meshMaterials[i] = materials[xgMesh.materials[i]];
+			for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
+				GameObject meshNode = new GameObject(namePrefix + "_item" + itemIndex + "_mesh" + ii);
+				meshNode.transform.parent = item.transform;
+				MeshFilter meshFilter = (MeshFilter)meshNode.AddComponent(typeof(MeshFilter));
+				MeshRenderer renderer = (MeshRenderer)meshNode.AddComponent(typeof(MeshRenderer));
+				meshFilter.mesh = xgMesh.meshes[ii];
+				Material[] meshMaterials = new Material[1];
+				meshMaterials[0] = materials[xgMesh.materials[ii]];
+				renderer.materials = meshMaterials;
 			}
-			renderer.materials = meshMaterials;
 			
 			items[itemIndex] = item;
 		}
