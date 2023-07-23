@@ -789,7 +789,20 @@ public class ImportXenogears : EditorWindow {
 
 	static UnityEngine.Object createEmptyPrefab(string rootDir, string namePrefix) {
 		string path = ToUnityPath(Path.Combine(rootDir, namePrefix + ".prefab"));
-		AssetDatabase.DeleteAsset(path);
+		string pathGuid = AssetDatabase.AssetPathToGUID (path);
+		if (pathGuid.Length != 0)
+		{
+			// The following wipes out the GUID and thus prefab connections, so avoid using this
+			// AssetDatabase.DeleteAsset(path);
+
+			// Instead, delete embedded assets (not GameObject or components etc)
+			UnityEngine.Object[] data = AssetDatabase.LoadAllAssetRepresentationsAtPath(path);
+
+			foreach (UnityEngine.Object o in data)
+			{
+				AssetDatabase.RemoveObjectFromAsset(o);
+			}
+		}
 		UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab(path);
 		return prefab;
 	}
