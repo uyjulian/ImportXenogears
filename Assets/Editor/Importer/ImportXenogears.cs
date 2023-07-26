@@ -110,6 +110,13 @@ public class XGMesh {
 	public int[] materials;
 }
 
+public class XGTexture {
+	public int width;
+	public int height;
+	public string name;
+	public uint[] pixels;
+}
+
 public class XGModel {
 	public List<XGMesh> meshes;
 	public List<XGShader> shaders;
@@ -673,7 +680,7 @@ public class ImportXenogears : EditorWindow {
 	}
 
 	
-	static Texture2D[] importFieldTextures(byte[] textureData, List<XGShader> shaderList) {
+	static XGTexture[] importFieldTextures(byte[] textureData, List<XGShader> shaderList) {
 		byte[] vram = new byte[2048 * 1024];
 
 		// unpack MIM data into "VRAM"
@@ -717,7 +724,7 @@ public class ImportXenogears : EditorWindow {
 		}
 	
 	    // convert textures with their palette
-	    Texture2D[] textures = new Texture2D[shaderList.Count];
+	    XGTexture[] textures = new XGTexture[shaderList.Count];
 		for(int shaderIndex=0; shaderIndex < shaderList.Count; shaderIndex++) {
 			XGShader shader = shaderList[shaderIndex];
 			if(shader.tme) {
@@ -783,10 +790,11 @@ public class ImportXenogears : EditorWindow {
 					}
 				}
 			
-				Texture2D texture = new Texture2D(256, 256);
+				XGTexture texture = new XGTexture();
+				texture.width = 256;
+				texture.height = 256;
 				texture.name = "texture" + shaderIndex;
-				texture.SetPixels(uintArrayToColorArray(image));
-				texture.Apply();
+				texture.pixels = image;
 				textures[shaderIndex] = texture;
 			} else {
 				textures[shaderIndex] = null;
@@ -835,12 +843,19 @@ public class ImportXenogears : EditorWindow {
 		}
 	}
 
-	static void saveTextureAssets(Texture2D[] textures, string rootDir, string namePrefix) {
+	static Texture2D[] saveTextureAssets(XGTexture[] textures, string rootDir, string namePrefix) {
+		Texture2D[] texture2ds = new Texture2D[textures.Length];
 		for(int i=0; i<textures.Length; i++) {
 			if (textures[i] != null) {
-				AssetDatabase.CreateAsset(textures[i], ToUnityPath(Path.Combine(rootDir, namePrefix + "_texture" + i + ".texture2D")));
+				Texture2D texture2d = new Texture2D(textures[i].width, textures[i].height);
+				texture2d.name = textures[i].name;
+				texture2d.SetPixels(uintArrayToColorArray(textures[i].pixels));
+				texture2d.Apply();
+				AssetDatabase.CreateAsset(texture2d, ToUnityPath(Path.Combine(rootDir, namePrefix + "_texture" + i + ".texture2D")));
+				texture2ds[i] = texture2d;
 			}
 		}
+		return texture2ds;
 	}
 
 	static void saveMaterialAssets(XGModel model, Texture2D[] textures, Material[] materials, string rootDir, string namePrefix) {
@@ -902,11 +917,11 @@ public class ImportXenogears : EditorWindow {
 		XGModel model = importFieldModel(modelData);
 		saveMeshAssets(model, stageMeshRoot, namePrefix);
 
-		Texture2D[] textures = importFieldTextures(textureData, model.shaders);
-		saveTextureAssets(textures, stageTextureRoot, namePrefix);
+		XGTexture[] textures = importFieldTextures(textureData, model.shaders);
+		Texture2D[] texture2ds = saveTextureAssets(textures, stageTextureRoot, namePrefix);
 		
 		Material[] materials = new Material[model.shaders.Count];
-		saveMaterialAssets(model, textures, materials, stageMaterialRoot, namePrefix);
+		saveMaterialAssets(model, texture2ds, materials, stageMaterialRoot, namePrefix);
 		
 		GameObject gameObject = new GameObject(namePrefix);
 		//gameObject.transform.localScale = new Vector3(-1,1,1);
@@ -1365,7 +1380,7 @@ public class ImportXenogears : EditorWindow {
 		return xgModel;
 	}
 	
-	static Texture2D[] importStageTextures(byte[] textureData, List<XGShader> shaderList) {
+	static XGTexture[] importStageTextures(byte[] textureData, List<XGShader> shaderList) {
 		byte[] vram = new byte[2048 * 1024];
 
 		// unpack MIM data into "VRAM"
@@ -1400,7 +1415,7 @@ public class ImportXenogears : EditorWindow {
 		}
 	
 	    // convert textures with their palette
-	    Texture2D[] textures = new Texture2D[shaderList.Count];
+	    XGTexture[] textures = new XGTexture[shaderList.Count];
 		for(int shaderIndex=0; shaderIndex < shaderList.Count; shaderIndex++) {
 			XGShader shader = shaderList[shaderIndex];
 			if(shader.tme) {
@@ -1466,10 +1481,11 @@ public class ImportXenogears : EditorWindow {
 					}
 				}
 			
-				Texture2D texture = new Texture2D(256, 256);
+				XGTexture texture = new XGTexture();
+				texture.width = 256;
+				texture.height = 256;
 				texture.name = "texture" + shaderIndex;
-				texture.SetPixels(uintArrayToColorArray(image));
-				texture.Apply();
+				texture.pixels = image;
 				textures[shaderIndex] = texture;
 			} else {
 				textures[shaderIndex] = null;
@@ -1562,11 +1578,11 @@ public class ImportXenogears : EditorWindow {
 		XGModel model = importStageModel(data);	
 		saveMeshAssets(model, stageMeshRoot, namePrefix);
 
-		Texture2D[] textures = importStageTextures(data, model.shaders);
-		saveTextureAssets(textures, stageTextureRoot, namePrefix);
+		XGTexture[] textures = importStageTextures(data, model.shaders);
+		Texture2D[] texture2ds = saveTextureAssets(textures, stageTextureRoot, namePrefix);
 
 		Material[] materials = new Material[model.shaders.Count];
-		saveMaterialAssets(model, textures, materials, stageMaterialRoot, namePrefix);
+		saveMaterialAssets(model, texture2ds, materials, stageMaterialRoot, namePrefix);
 		
 		List<int> hierarchy = new List<int>();
 		uint offset = getUInt32LE(data, 12);
@@ -1647,11 +1663,11 @@ public class ImportXenogears : EditorWindow {
 		XGModel model = importStageModel(data);	
 		saveMeshAssets(model, stageMeshRoot, namePrefix);
 
-		Texture2D[] textures = importStageTextures(data, model.shaders);
-		saveTextureAssets(textures, stageTextureRoot, namePrefix);
+		XGTexture[] textures = importStageTextures(data, model.shaders);
+		Texture2D[] texture2ds = saveTextureAssets(textures, stageTextureRoot, namePrefix);
 
 		Material[] materials = new Material[model.shaders.Count];
-		saveMaterialAssets(model, textures, materials, stageMaterialRoot, namePrefix);
+		saveMaterialAssets(model, texture2ds, materials, stageMaterialRoot, namePrefix);
 		
 		List<int> hierarchy = new List<int>();
 		uint offset = getUInt32LE(data, 12);
