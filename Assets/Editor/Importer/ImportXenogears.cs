@@ -645,7 +645,16 @@ public class ImportXenogears : EditorWindow {
 		return xgModel;
 	}
 	
-	static Color getColour(ushort col, bool abe, int alpha) {
+	static Color[] uintArrayToColorArray(uint[] uintData) {
+		Color[] colorData = new Color[uintData.Length];
+		for (int i = 0; i < uintData.Length; i += 1) {
+			uint c = uintData[i];
+			colorData[i] = new Color((float)((c & 0x000000FF) >> 0)/255.0f,(float)((c & 0x0000FF00) >> 8)/255.0f,(float)((c & 0x00FF0000) >> 16)/255.0f,(float)((c & 0xFF000000) >> 24)/255.0f);
+		}
+		return colorData;
+	}
+
+	static uint getColour(ushort col, bool abe, int alpha) {
 	    bool stp = (col & 0x8000) != 0;
 	    int r = (((col     ) & 31) * 255 + 15) / 31;
 	    int g = (((col >>  5) & 31) * 255 + 15) / 31;
@@ -660,7 +669,7 @@ public class ImportXenogears : EditorWindow {
 		} else if (stp && abe) {
 			a = alpha;
 		}
-		return new Color((float)r/255.0f,(float)g/255.0f,(float)b/255.0f,(float)a/255.0f);
+		return (((uint)r & 0xFF) << 0) | (((uint)g & 0xFF) << 8) | (((uint)b & 0xFF) << 16) | (((uint)a & 0xFF) << 24);
 	}
 
 	
@@ -729,10 +738,10 @@ public class ImportXenogears : EditorWindow {
 					}
 				}
 				
-	    		Color[] image = new Color[256*256];
+	    		uint[] image = new uint[256*256];
 				switch(tp) {
 					case 0: { // 4-bit
-						Color[] pal = new Color[16];
+						uint[] pal = new uint[16];
 						for (int idx=0; idx<16; idx++) {
 							uint vaddr = (uint)(py * 2048 + idx * 2 + px * 2);
 							ushort col = (ushort)(vram[vaddr] + vram[vaddr+1] * 256);
@@ -748,7 +757,7 @@ public class ImportXenogears : EditorWindow {
 						break;
 					}
 				    case 1: {
-						Color[] pal = new Color[256];
+						uint[] pal = new uint[256];
 						for (int idx=0; idx<256; idx++) {
 							uint vaddr = (uint)(py * 2048 + idx * 2 + px * 2);
 							ushort col = (ushort)(vram[vaddr] + vram[vaddr+1] * 256);
@@ -776,7 +785,7 @@ public class ImportXenogears : EditorWindow {
 			
 				Texture2D texture = new Texture2D(256, 256);
 				texture.name = "texture" + shaderIndex;
-				texture.SetPixels(image);
+				texture.SetPixels(uintArrayToColorArray(image));
 				texture.Apply();
 				textures[shaderIndex] = texture;
 			} else {
@@ -1412,10 +1421,10 @@ public class ImportXenogears : EditorWindow {
 					}
 				}
 				
-	    		Color[] image = new Color[256*256];
+	    		uint[] image = new uint[256*256];
 				switch(tp) {
 					case 0: { // 4-bit
-						Color[] pal = new Color[16];
+						uint[] pal = new uint[16];
 						for (int idx=0; idx<16; idx++) {
 							uint vaddr = (uint)(py * 2048 + idx * 2 + px * 2);
 							ushort col = (ushort)(vram[vaddr] + vram[vaddr+1] * 256);
@@ -1431,7 +1440,7 @@ public class ImportXenogears : EditorWindow {
 						break;
 					}
 				    case 1: {
-						Color[] pal = new Color[256];
+						uint[] pal = new uint[256];
 						for (int idx=0; idx<256; idx++) {
 							uint vaddr = (uint)(py * 2048 + idx * 2 + px * 2);
 							ushort col = (ushort)(vram[vaddr] + vram[vaddr+1] * 256);
@@ -1459,7 +1468,7 @@ public class ImportXenogears : EditorWindow {
 			
 				Texture2D texture = new Texture2D(256, 256);
 				texture.name = "texture" + shaderIndex;
-				texture.SetPixels(image);
+				texture.SetPixels(uintArrayToColorArray(image));
 				texture.Apply();
 				textures[shaderIndex] = texture;
 			} else {
@@ -1718,7 +1727,7 @@ public class ImportXenogears : EditorWindow {
 		
 		for(uint ytex=0;ytex<4; ytex++) {
 			for(uint xtex=0; xtex<4; xtex++) {
-				Color[] image = new Color[1024*1024];
+				uint[] image = new uint[1024*1024];
 				for (uint i=0; i<4; i++) {
 					for (uint j=0; j<4; j++) {
 						uint terrainOffset = ((i+ytex*4) * 16 + (j+xtex*4)) * 2048;
@@ -1747,10 +1756,10 @@ public class ImportXenogears : EditorWindow {
 										int xf = flipU ? 15-xx : xx;
 										int index = textureData[textureOffset + 0x220 + (v+yf) * 256 + (u+xf)];
 										ushort col = getUInt16LE(textureData, (uint)(textureOffset + 0x14 + index * 2));
-										float r = (float)((col    ) & 31) / 31.0f;
-										float g = (float)((col >>  5) & 31) / 31.0f;
-										float b = (float)((col >> 10) & 31) / 31.0f;
-										image[((j*16+x)*16+xx) * 1024 + ((i*16+y)*16+yy)] = new Color(r, g, b, 1.0f);
+									    int r = (((col     ) & 31) * 255 + 15) / 31;
+									    int g = (((col >>  5) & 31) * 255 + 15) / 31;
+									    int b = (((col >> 10) & 31) * 255 + 15) / 31;
+										image[((j*16+x)*16+xx) * 1024 + ((i*16+y)*16+yy)] = (((uint)r & 0xFF) << 0) | (((uint)g & 0xFF) << 8) | (((uint)b & 0xFF) << 16) | (((uint)0xFF) << 24);
 									}
 								}
 							}
@@ -1760,7 +1769,7 @@ public class ImportXenogears : EditorWindow {
 				Texture2D texture = new Texture2D(1024, 1024);
 				texture.name = "texture" + (ytex*4+xtex);
 				texture.wrapMode = TextureWrapMode.Clamp;
-				texture.SetPixels(image);
+				texture.SetPixels(uintArrayToColorArray(image));
 				texture.Apply();
 				AssetDatabase.CreateAsset(texture, ToUnityPath(Path.Combine(stageTextureRoot, namePrefix + "_texture0.texture2D")));
 				
@@ -2103,10 +2112,10 @@ public class ImportXenogears : EditorWindow {
 			break;
 		}
 		
-		Color[] image = new Color[width*height];
+		uint[] image = new uint[width*height];
 		switch(bpp) {
 			case 0: { // 4-bit
-				Color[] pal = new Color[16];
+				uint[] pal = new uint[16];
 				for (int idx=0; idx<16; idx++) {
 					uint vaddr = (uint)(clut_ymin * 2048 + idx * 2);
 					ushort col = (ushort)(vram[vaddr] + vram[vaddr+1] * 256);
@@ -2122,7 +2131,7 @@ public class ImportXenogears : EditorWindow {
 				break;
 			}
 		    case 1: {
-				Color[] pal = new Color[256];
+				uint[] pal = new uint[256];
 				for (int idx=0; idx<256; idx++) {
 					uint vaddr = (uint)(clut_ymin * 2048 + idx * 2);
 					ushort col = (ushort)(vram[vaddr] + vram[vaddr+1] * 256);
@@ -2149,7 +2158,7 @@ public class ImportXenogears : EditorWindow {
 		}
 	
 		Texture2D texture = new Texture2D(width, height);
-		texture.SetPixels(image);
+		texture.SetPixels(uintArrayToColorArray(image));
 		texture.Apply();
 		byte[] pngData = texture.EncodeToPNG();
 		
