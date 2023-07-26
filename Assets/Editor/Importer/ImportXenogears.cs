@@ -914,8 +914,6 @@ public class ImportXenogears : EditorWindow {
 			
 			GameObject item = new GameObject(namePrefix + "_item" + itemIndex);
 			item.transform.parent = gameObject.transform;
-			item.transform.Translate(pos_x, pos_y, pos_z);
-			item.transform.Rotate(rot_x * 90.0f / 1024.0f, rot_y * 90.0f / 1024.0f, rot_z * 90.0f / 1024.0f);
 			XGFieldNode xgFieldNode = (XGFieldNode)item.AddComponent (typeof(XGFieldNode));
 			xgFieldNode.flag = new bool[16];
 			for(int i=0; i<16; i++) {
@@ -935,6 +933,8 @@ public class ImportXenogears : EditorWindow {
 					renderer.materials = meshMaterials;
 				}
 			}
+			item.transform.Translate(pos_x, pos_y, pos_z);
+			item.transform.Rotate(rot_x * 90.0f / 1024.0f, rot_y * 90.0f / 1024.0f, rot_z * 90.0f / 1024.0f);
 		}
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
 		
