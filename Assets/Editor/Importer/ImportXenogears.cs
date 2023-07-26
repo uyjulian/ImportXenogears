@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Collections.Generic;
 
 public class FileEntry {
@@ -651,14 +652,112 @@ public class ImportXenogears : EditorWindow {
 		}
 		return xgModel;
 	}
-	
-	static Color[] uintArrayToColorArray(uint[] uintData) {
-		Color[] colorData = new Color[uintData.Length];
-		for (int i = 0; i < uintData.Length; i += 1) {
-			uint c = uintData[i];
-			colorData[i] = new Color((float)((c & 0x000000FF) >> 0)/255.0f,(float)((c & 0x0000FF00) >> 8)/255.0f,(float)((c & 0x00FF0000) >> 16)/255.0f,(float)((c & 0xFF000000) >> 24)/255.0f);
+
+	private static uint Adler32(byte[] bytes) {
+		const uint a32mod = 65521;
+		uint s1 = 1, s2 = 0;
+		foreach (byte b in bytes) {
+			s1 = (s1 + b) % a32mod;
+			s2 = (s2 + s1) % a32mod;
 		}
-		return colorData;
+		return ((s2 << 16) + s1);
+	}
+	private static uint[] crc32_tab = {
+		0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+		0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c,
+	};
+	private static uint UpdateCRC32(byte[] buf, uint old_crc) {
+		uint crc = old_crc;
+
+		for (int n = 0; n < buf.Length; n += 1) {
+			crc ^= buf[n];
+			crc = (crc >> 4) ^ crc32_tab[crc & 15];
+			crc = (crc >> 4) ^ crc32_tab[crc & 15];
+		}
+
+		return crc;
+	}
+	private static void PutUInt32BE(byte[] buf, uint offset, uint val) {
+		buf[offset + 0] = (byte)((val & 0xFF000000) >> 24);
+		buf[offset + 1] = (byte)((val & 0x00FF0000) >> 16);
+		buf[offset + 2] = (byte)((val & 0x0000FF00) >> 8);
+		buf[offset + 3] = (byte)((val & 0x000000FF) >> 0);
+	}
+	private static void WritePNGChunk(Stream f, byte[] identBuf, byte[] buf) {
+		byte[] size = new byte[4];
+		PutUInt32BE(size, 0, (uint)buf.Length);
+		byte[] crcBuf = new byte[4];
+		uint crc = 0xFFFFFFFF;
+		crc = UpdateCRC32(identBuf, crc);
+		crc = UpdateCRC32(buf, crc);
+		crc ^= 0xFFFFFFFF;
+		PutUInt32BE(crcBuf, 0, crc);
+		f.Write(size, 0, size.Length);
+		f.Write(identBuf, 0, identBuf.Length);
+		f.Write(buf, 0, buf.Length);
+		f.Write(crcBuf, 0, crcBuf.Length);
+	}
+	private static byte[] UInt32LEArrayToByteArray(uint[] inbuf) {
+		byte[] outbuf = new byte[inbuf.Length * 4];
+		for (var i = 0; i < inbuf.Length; i += 1) {
+			uint val = inbuf[i];
+			outbuf[(i * 4) + 3] = (byte)((val & 0xFF000000) >> 24);
+			outbuf[(i * 4) + 2] = (byte)((val & 0x00FF0000) >> 16);
+			outbuf[(i * 4) + 1] = (byte)((val & 0x0000FF00) >> 8);
+			outbuf[(i * 4) + 0] = (byte)((val & 0x000000FF) >> 0);
+		}
+		return outbuf;
+	}
+
+	private static void WritePNG(uint[] pixels, int imageWidth, int imageHeight, string path) {
+		byte[] pngHeader = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0d, 0x0a, 0x1a, 0x0a };
+		byte[] pngIHDR = new byte[13];
+		byte[] pngIDAT = new byte[0];
+		byte[] pngIEND = new byte[0];
+		byte[] pngChunkIdIHDR = new byte[] { 0x49, 0x48, 0x44, 0x52 };
+		byte[] pngChunkIdIDAT = new byte[] { 0x49, 0x44, 0x41, 0x54 };
+		byte[] pngChunkIdIEND = new byte[] { 0x49, 0x45, 0x4E, 0x44 };
+
+		byte[] pixelsBytes = UInt32LEArrayToByteArray(pixels);
+
+		PutUInt32BE(pngIHDR, 0, (uint)imageWidth); // width
+		PutUInt32BE(pngIHDR, 4, (uint)imageHeight); // height
+		pngIHDR[8] = 8; // depth
+		pngIHDR[9] = 6; // color type
+		pngIHDR[10] = 0; // compression
+		pngIHDR[11] = 0; // filter
+		pngIHDR[12] = 0; // interlace
+
+		using (var cbio = new MemoryStream(pixelsBytes.Length)) {
+			cbio.WriteByte(0x78);
+			cbio.WriteByte(0x9C);
+			using (var cbio2 = new MemoryStream(pixelsBytes.Length + imageHeight)) {
+				for (int row = 0; row < imageHeight; row += 1) {
+					cbio2.WriteByte(0x00);
+					cbio2.Write(pixelsBytes, ((imageHeight - (row + 1)) * imageWidth) * 4, imageWidth * 4);
+				}
+				cbio2.Seek(0, SeekOrigin.Begin);
+				byte[] filteredPixelsBytes = new byte[cbio2.Length];
+				cbio2.Read(filteredPixelsBytes, 0, (int)cbio2.Length);
+				using (var cbiod = new DeflateStream(cbio, CompressionMode.Compress, true)) {
+					cbiod.Write(filteredPixelsBytes, 0, filteredPixelsBytes.Length);
+				}
+				byte[] adlerBuf = new byte[4];
+				PutUInt32BE(adlerBuf, 0, Adler32(filteredPixelsBytes));
+				cbio.Write(adlerBuf, 0, adlerBuf.Length);
+			}
+			cbio.Seek(0, SeekOrigin.Begin);
+			pngIDAT = new byte[cbio.Length];
+			cbio.Read(pngIDAT, 0, (int)cbio.Length);
+		}
+
+
+		using (var wf = File.Open(path, FileMode.Create)) {
+			wf.Write(pngHeader, 0, pngHeader.Length);
+			WritePNGChunk(wf, pngChunkIdIHDR, pngIHDR);
+			WritePNGChunk(wf, pngChunkIdIDAT, pngIDAT);
+			WritePNGChunk(wf, pngChunkIdIEND, pngIEND);
+		}
 	}
 
 	static uint getColour(ushort col, bool abe, int alpha) {
@@ -847,11 +946,10 @@ public class ImportXenogears : EditorWindow {
 		Texture2D[] texture2ds = new Texture2D[textures.Length];
 		for(int i=0; i<textures.Length; i++) {
 			if (textures[i] != null) {
-				Texture2D texture2d = new Texture2D(textures[i].width, textures[i].height);
-				texture2d.name = textures[i].name;
-				texture2d.SetPixels(uintArrayToColorArray(textures[i].pixels));
-				texture2d.Apply();
-				AssetDatabase.CreateAsset(texture2d, ToUnityPath(Path.Combine(rootDir, namePrefix + "_texture" + i + ".texture2D")));
+				string imageFilePath = ToUnityPath(Path.Combine(rootDir, namePrefix + "_texture" + i + ".png"));
+				WritePNG(textures[i].pixels, textures[i].width, textures[i].height, imageFilePath);
+				AssetDatabase.ImportAsset(imageFilePath);
+				Texture2D texture2d = (Texture2D)AssetDatabase.LoadMainAssetAtPath(imageFilePath);
 				texture2ds[i] = texture2d;
 			}
 		}
@@ -1782,15 +1880,18 @@ public class ImportXenogears : EditorWindow {
 						}
 					}
 				}
-				Texture2D texture = new Texture2D(1024, 1024);
-				texture.name = "texture" + (ytex*4+xtex);
-				texture.wrapMode = TextureWrapMode.Clamp;
-				texture.SetPixels(uintArrayToColorArray(image));
-				texture.Apply();
-				AssetDatabase.CreateAsset(texture, ToUnityPath(Path.Combine(stageTextureRoot, namePrefix + "_texture0.texture2D")));
-				
+				string imageFilePath = ToUnityPath(Path.Combine(stageTextureRoot, namePrefix + "_texture" + (ytex*4+xtex) + ".png"));
+				WritePNG(image, 1024, 1024, imageFilePath);
+				AssetDatabase.ImportAsset(imageFilePath);
+
+				TextureImporter textureImporter = (TextureImporter)AssetImporter.GetAtPath(imageFilePath);
+				textureImporter.wrapMode = TextureWrapMode.Clamp;
+				AssetDatabase.ImportAsset(imageFilePath);
+
+				Texture2D texture2d = (Texture2D)AssetDatabase.LoadMainAssetAtPath(imageFilePath);
+
 				SplatPrototype splatPrototype = new SplatPrototype();
-				splatPrototype.texture = texture;
+				splatPrototype.texture = texture2d;
 				splatPrototype.tileOffset = new Vector2(-ytex*64, -xtex*64); 
 				splatPrototype.tileSize = new Vector2(64, 64);
 				splatPrototypes[ytex*4+xtex] = splatPrototype;
@@ -2172,14 +2273,9 @@ public class ImportXenogears : EditorWindow {
 				break;
 			}
 		}
-	
-		Texture2D texture = new Texture2D(width, height);
-		texture.SetPixels(uintArrayToColorArray(image));
-		texture.Apply();
-		byte[] pngData = texture.EncodeToPNG();
-		
+
 		string imageFilePath = ToUnityPath(Path.Combine(imageGroupRoot, "texture" + fileIndex + ".png"));
-		File.WriteAllBytes(imageFilePath, pngData);
+		WritePNG(image, width, height, imageFilePath);
 		AssetDatabase.ImportAsset(imageFilePath);
 
 		TextureImporter textureImporter = (TextureImporter)AssetImporter.GetAtPath(imageFilePath);
