@@ -761,6 +761,24 @@ public class ImportXenogears : EditorWindow {
 		}
 	}
 
+	private static uint checkTransparency(uint[] pixels) {
+		uint ret = 0;
+
+		for (int i = 0; i < pixels.Length; i += 1) {
+			uint alpha = (pixels[i] & 0xFF000000) >> 24;
+			if (alpha != 0xFF) {
+				// Is alpha
+				ret |= 1;
+			}
+			if (alpha != 0x00 && alpha != 0xFF) {
+				// Is semi-transparent
+				ret |= 2;
+			}
+		}
+
+		return ret;
+	}
+
 	static uint getColour(ushort col, bool abe, int alpha) {
 	    bool stp = (col & 0x8000) != 0;
 	    int r = (((col     ) & 31) * 255 + 15) / 31;
@@ -957,20 +975,29 @@ public class ImportXenogears : EditorWindow {
 		return texture2ds;
 	}
 
-	static void saveMaterialAssets(XGModel model, Texture2D[] textures, Material[] materials, string rootDir, string namePrefix) {
+	static void saveMaterialAssets(XGModel model, XGTexture[] textures, Texture2D[] texture2ds, Material[] materials, string rootDir, string namePrefix) {
 		Shader opaqueShader = Shader.Find ("Diffuse");
 		Shader cutoutShader = Shader.Find ("Transparent/Cutout/Diffuse");
 		Shader transparentShader = Shader.Find ("Transparent/Diffuse");
 		for (int i=0; i<model.shaders.Count; i++) {
-			if (model.shaders[i].abe) {
+			if (textures[i] != null) {
+				uint transparency = checkTransparency(textures[i].pixels);
+				if ((transparency & 2) != 0) { // Is semi transparent
+					materials[i] = new Material(transparentShader);
+				}
+				else if ((transparency & 1) != 0) { // Is either fully transparent or opaque
+					materials[i] = new Material(cutoutShader);
+				}
+				else { // Fully opaque
+					materials[i] = new Material(opaqueShader);
+				}
+			}
+			else {
 				materials[i] = new Material(transparentShader);
-			} else {
-				// should probably check the texture if the cutout shader is required...
-				materials[i] = new Material(cutoutShader);
 			}
 			materials[i].name = "material" + i;
-			if (textures[i] != null) {
-				materials[i].mainTexture = textures[i];
+			if (texture2ds[i] != null) {
+				materials[i].mainTexture = texture2ds[i];
 			}
 			AssetDatabase.CreateAsset(materials[i], ToUnityPath(Path.Combine(rootDir, namePrefix + "_" + materials[i].name + ".mat")));
 		}
@@ -1020,7 +1047,7 @@ public class ImportXenogears : EditorWindow {
 		Texture2D[] texture2ds = saveTextureAssets(textures, stageTextureRoot, namePrefix);
 		
 		Material[] materials = new Material[model.shaders.Count];
-		saveMaterialAssets(model, texture2ds, materials, stageMaterialRoot, namePrefix);
+		saveMaterialAssets(model, textures, texture2ds, materials, stageMaterialRoot, namePrefix);
 		
 		GameObject gameObject = new GameObject(namePrefix);
 		//gameObject.transform.localScale = new Vector3(-1,1,1);
@@ -1683,7 +1710,7 @@ public class ImportXenogears : EditorWindow {
 		Texture2D[] texture2ds = saveTextureAssets(textures, stageTextureRoot, namePrefix);
 
 		Material[] materials = new Material[model.shaders.Count];
-		saveMaterialAssets(model, texture2ds, materials, stageMaterialRoot, namePrefix);
+		saveMaterialAssets(model, textures, texture2ds, materials, stageMaterialRoot, namePrefix);
 		
 		List<int> hierarchy = new List<int>();
 		uint offset = getUInt32LE(data, 12);
@@ -1768,7 +1795,7 @@ public class ImportXenogears : EditorWindow {
 		Texture2D[] texture2ds = saveTextureAssets(textures, stageTextureRoot, namePrefix);
 
 		Material[] materials = new Material[model.shaders.Count];
-		saveMaterialAssets(model, texture2ds, materials, stageMaterialRoot, namePrefix);
+		saveMaterialAssets(model, textures, texture2ds, materials, stageMaterialRoot, namePrefix);
 		
 		List<int> hierarchy = new List<int>();
 		uint offset = getUInt32LE(data, 12);
