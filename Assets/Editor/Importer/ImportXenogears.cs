@@ -1968,6 +1968,7 @@ public class ImportXenogears : EditorWindow {
 		GameObject gameObject = new GameObject(namePrefix);
 		Terrain terrain = (Terrain)gameObject.AddComponent(typeof(Terrain));
 		terrain.terrainData = terrainData;
+		terrain.materialTemplate = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Standard.mat");
 		TerrainCollider terrainCollider = (TerrainCollider)gameObject.AddComponent(typeof(TerrainCollider));
 		terrainCollider.terrainData = terrainData;
 
@@ -1990,6 +1991,7 @@ public class ImportXenogears : EditorWindow {
 		    }
 		}
 		terrainData.SetAlphamaps(0, 0, splatmapData);
+		terrain.Flush();
 
 		RenderSettings.ambientLight = Color.white;
 		
