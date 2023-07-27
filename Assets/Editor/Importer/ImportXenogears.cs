@@ -130,6 +130,7 @@ public class ImportXenogears : EditorWindow {
 	bool exportDiscs = true;
 	bool exportField = true;
 	string exportFieldIndices = "";
+	bool attachXGFieldNode = true;
 	bool exportStage = true;
 	string exportStageIndices = "";
 	bool exportTerrain = true;
@@ -985,7 +986,7 @@ public class ImportXenogears : EditorWindow {
 		EditorApplication.SaveScene(ToUnityPath(Path.Combine(rootDir, namePrefix + ".unity")));
 	}
 
-	static void importField(uint fileIndex) {
+	static void importField(uint fileIndex, bool shouldAttachXGFieldNode) {
 		string stageRoot = createFolderIfNotExistent("Assets", "Field");
 		string stageModelRoot = createFolderIfNotExistent(stageRoot, "Model");
 		string stageSceneRoot = createFolderIfNotExistent(stageRoot, "Scene");
@@ -1036,12 +1037,14 @@ public class ImportXenogears : EditorWindow {
 			
 			GameObject item = new GameObject(namePrefix + "_item" + itemIndex);
 			item.transform.parent = gameObject.transform;
-			XGFieldNode xgFieldNode = (XGFieldNode)item.AddComponent (typeof(XGFieldNode));
-			xgFieldNode.flag = new bool[16];
-			for(int i=0; i<16; i++) {
-				xgFieldNode.flag[i] = (flags & (1<<i)) != 0;
+			if (shouldAttachXGFieldNode) {
+				XGFieldNode xgFieldNode = (XGFieldNode)item.AddComponent (typeof(XGFieldNode));
+				xgFieldNode.flag = new bool[16];
+				for(int i=0; i<16; i++) {
+					xgFieldNode.flag[i] = (flags & (1<<i)) != 0;
+				}
+				xgFieldNode.index = index;
 			}
-			xgFieldNode.index = index;
 			if ((flags & ((1<<5)|(1<<6)/*|(1<<7)|(1<<8)*/)) == 0) {
 				XGMesh xgMesh = model.meshes[index]; 
 				for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
@@ -2349,6 +2352,7 @@ public class ImportXenogears : EditorWindow {
 		
         exportField = EditorGUILayout.Toggle ("Import Fields", exportField);
         exportFieldIndices = EditorGUILayout.TextField ("Field Indices", exportFieldIndices);
+        attachXGFieldNode = EditorGUILayout.Toggle ("Attach XGFieldNode", attachXGFieldNode);
 		exportStage = EditorGUILayout.Toggle ("Import Stages", exportStage);
 		exportStageIndices = EditorGUILayout.TextField ("Stage Indices", exportStageIndices);
 		exportTerrain = EditorGUILayout.Toggle ("Import Terrain", exportTerrain);
@@ -2395,12 +2399,12 @@ public class ImportXenogears : EditorWindow {
 						if (indicesList.Count != 0 && !indicesList.Contains(i)) {
 							continue;
 						}
-						importField (i);
+						importField (i, attachXGFieldNode);
 					}
 					exportField = false;
 					EditorPrefs.SetInt("XGFieldVersion", fieldVersion);
 					
-					// importField (95);
+					// importField (95, attachXGFieldNode);
 				}
 				if (exportStage) {
 					List<uint> indicesList = new List<uint>();
