@@ -1884,10 +1884,6 @@ public class ImportXenogears : EditorWindow {
 				WritePNG(image, 1024, 1024, imageFilePath);
 				AssetDatabase.ImportAsset(imageFilePath);
 
-				TextureImporter textureImporter = (TextureImporter)AssetImporter.GetAtPath(imageFilePath);
-				textureImporter.wrapMode = TextureWrapMode.Clamp;
-				AssetDatabase.ImportAsset(imageFilePath);
-
 				Texture2D texture2d = (Texture2D)AssetDatabase.LoadMainAssetAtPath(imageFilePath);
 
 				SplatPrototype splatPrototype = new SplatPrototype();
@@ -2276,13 +2272,6 @@ public class ImportXenogears : EditorWindow {
 
 		string imageFilePath = ToUnityPath(Path.Combine(imageGroupRoot, "texture" + fileIndex + ".png"));
 		WritePNG(image, width, height, imageFilePath);
-		AssetDatabase.ImportAsset(imageFilePath);
-
-		TextureImporter textureImporter = (TextureImporter)AssetImporter.GetAtPath(imageFilePath);
-		textureImporter.textureType = TextureImporterType.GUI;
-		textureImporter.wrapMode = TextureWrapMode.Clamp;
-		textureImporter.linearTexture = false;
-		textureImporter.textureFormat = TextureImporterFormat.ARGB16;
 		AssetDatabase.ImportAsset(imageFilePath);
 	}
 	
