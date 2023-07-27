@@ -1870,11 +1870,12 @@ public class ImportXenogears : EditorWindow {
 		
 		byte[] data = File.ReadAllBytes(filePath);
 		byte[] textureData = loadLzs(texturePath);
-		TerrainLayer[] terrainLayers = new TerrainLayer[16];
+		TerrainLayer[] terrainLayers = new TerrainLayer[1];
 		
+		uint[] image = new uint[4096*4096];
 		for(uint ytex=0;ytex<4; ytex++) {
 			for(uint xtex=0; xtex<4; xtex++) {
-				uint[] image = new uint[1024*1024];
+				uint[] layerImage = new uint[1024*1024];
 				for (uint i=0; i<4; i++) {
 					for (uint j=0; j<4; j++) {
 						uint terrainOffset = ((i+ytex*4) * 16 + (j+xtex*4)) * 2048;
@@ -1906,27 +1907,32 @@ public class ImportXenogears : EditorWindow {
 									    int r = (((col     ) & 31) * 255 + 15) / 31;
 									    int g = (((col >>  5) & 31) * 255 + 15) / 31;
 									    int b = (((col >> 10) & 31) * 255 + 15) / 31;
-										image[((j*16+x)*16+xx) * 1024 + ((i*16+y)*16+yy)] = (((uint)r & 0xFF) << 0) | (((uint)g & 0xFF) << 8) | (((uint)b & 0xFF) << 16) | (((uint)0xFF) << 24);
+										layerImage[((j*16+x)*16+xx) * 1024 + ((i*16+y)*16+yy)] = (((uint)r & 0xFF) << 0) | (((uint)g & 0xFF) << 8) | (((uint)b & 0xFF) << 16) | (((uint)0xFF) << 24);
 									}
 								}
 							}
 						}
 					}
 				}
-				string imageFilePath = ToUnityPath(Path.Combine(stageTextureRoot, namePrefix + "_texture" + (ytex*4+xtex) + ".png"));
-				WritePNG(image, 1024, 1024, imageFilePath);
-				AssetDatabase.ImportAsset(imageFilePath);
-
-				Texture2D texture2d = (Texture2D)AssetDatabase.LoadMainAssetAtPath(imageFilePath);
-
-				TerrainLayer terrainLayer = new TerrainLayer();
-				terrainLayer.diffuseTexture = texture2d;
-				terrainLayer.tileOffset = new Vector2(-ytex*64, -xtex*64); 
-				terrainLayer.tileSize = new Vector2(64, 64);
-				AssetDatabase.CreateAsset(terrainLayer, ToUnityPath(Path.Combine(stageTerrainLayerRoot, namePrefix + "_terrainlayer" + (ytex*4+xtex) + ".terrainlayer")));
-				terrainLayers[ytex*4+xtex] = terrainLayer;
+				for (uint y = 0; y < 1024; y += 1) {
+					for (uint x = 0; x < 1024; x += 1) {
+						image[((xtex * (4096 * 1024)) + (y * 4096)) + (ytex * 1024) + x] = layerImage[(y * 1024) + x];
+					}
+				}
 			}
 		}
+		string imageFilePath = ToUnityPath(Path.Combine(stageTextureRoot, namePrefix + "_texture0.png"));
+		WritePNG(image, 4096, 4096, imageFilePath);
+		AssetDatabase.ImportAsset(imageFilePath);
+
+		Texture2D texture2d = (Texture2D)AssetDatabase.LoadMainAssetAtPath(imageFilePath);
+
+		TerrainLayer terrainLayer = new TerrainLayer();
+		terrainLayer.diffuseTexture = texture2d;
+		terrainLayer.tileOffset = new Vector2(0, 0);
+		terrainLayer.tileSize = new Vector2(256, 256);
+		AssetDatabase.CreateAsset(terrainLayer, ToUnityPath(Path.Combine(stageTerrainLayerRoot, namePrefix + "_terrainlayer0.terrainlayer")));
+		terrainLayers[0] = terrainLayer;
 
 		float[,] heights = new float[256,256];
 		for (uint i=0; i<16; i++) {
@@ -1961,7 +1967,6 @@ public class ImportXenogears : EditorWindow {
 		terrainData.heightmapResolution = 256;
 		terrainData.size = new Vector3(256,16,256);
 		terrainData.SetHeights(0, 0, heights);
-		terrainData.alphamapResolution = 64;
 		terrainData.terrainLayers = terrainLayers;
 		
 		AssetDatabase.CreateAsset(terrainData, ToUnityPath(Path.Combine(stageTerrainRoot, namePrefix + "_terrain0.asset")));
@@ -1978,20 +1983,7 @@ public class ImportXenogears : EditorWindow {
 		
 		// Need to save assets or the weights don't work
 		AssetDatabase.SaveAssets();
-		
-		// Blend the textures
-		float[, ,] splatmapData = new float [ terrainData.alphamapWidth, terrainData.alphamapHeight, terrainData.alphamapLayers];
-		int dw = terrainData.alphamapWidth / 4;
-		int dh = terrainData.alphamapHeight / 4;
-		for (int i = 0; i < terrainData.alphamapWidth; i++) {
-		    for (int j = 0; j < terrainData.alphamapHeight; j++) {
-				int idx = (i/dw)+(j/dh)*4;
-				for (int k = 0; k < terrainData.alphamapLayers; k++) {
-		        	splatmapData[i, j, k] = k != idx ? 0.0f : 1.0f; 
-				}
-		    }
-		}
-		terrainData.SetAlphamaps(0, 0, splatmapData);
+
 		terrain.Flush();
 
 		RenderSettings.ambientLight = Color.white;
