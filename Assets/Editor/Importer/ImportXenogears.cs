@@ -2414,6 +2414,7 @@ public class ImportXenogears : EditorWindow {
 
 	void Update() {
 		if (doExport) {
+			string saveCurrentScene = EditorSceneManager.GetActiveScene().path;
 			try {
 				if (exportDiscs) {
 					importDisc(1, disc1);
@@ -2504,6 +2505,9 @@ public class ImportXenogears : EditorWindow {
 				doExport = false;
 			}
 			AssetDatabase.SaveAssets();
+			if (EditorSceneManager.GetActiveScene().path != saveCurrentScene) {
+				EditorSceneManager.OpenScene(saveCurrentScene);
+			}
 		}
 	}
 }
