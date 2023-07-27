@@ -1086,7 +1086,8 @@ public class ImportXenogears : EditorWindow {
 			item.transform.Translate(pos_x, pos_y, pos_z);
 			item.transform.Rotate(rot_x * 90.0f / 1024.0f, rot_y * 90.0f / 1024.0f, rot_z * 90.0f / 1024.0f);
 		}
-		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
+		gameObject.transform.localScale = new Vector3(0.02f,0.02f,-0.02f);
+		gameObject.transform.localEulerAngles = new Vector3(-180,90,0);
 		
 		wipePrefabEmbeddedAssets(prefabPath);
 		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
