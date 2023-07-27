@@ -1,6 +1,7 @@
 // C# xenogears importer:
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -922,24 +923,21 @@ public class ImportXenogears : EditorWindow {
 	    return textures;
 	}
 
-	static UnityEngine.Object createEmptyPrefab(string rootDir, string namePrefix) {
-		string path = ToUnityPath(Path.Combine(rootDir, namePrefix + ".prefab"));
-		string pathGuid = AssetDatabase.AssetPathToGUID (path);
+	static void wipePrefabEmbeddedAssets(string prefabPath) {
+		string pathGuid = AssetDatabase.AssetPathToGUID (prefabPath);
 		if (pathGuid.Length != 0)
 		{
 			// The following wipes out the GUID and thus prefab connections, so avoid using this
-			// AssetDatabase.DeleteAsset(path);
+			// AssetDatabase.DeleteAsset(prefabPath);
 
 			// Instead, delete embedded assets (not GameObject or components etc)
-			UnityEngine.Object[] data = AssetDatabase.LoadAllAssetRepresentationsAtPath(path);
+			UnityEngine.Object[] data = AssetDatabase.LoadAllAssetRepresentationsAtPath(prefabPath);
 
 			foreach (UnityEngine.Object o in data)
 			{
 				AssetDatabase.RemoveObjectFromAsset(o);
 			}
 		}
-		UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab(path);
-		return prefab;
 	}
 
 	static string createFolderIfNotExistent(string rootDir, string newDirName) {
@@ -1010,7 +1008,7 @@ public class ImportXenogears : EditorWindow {
 	}
 
 	static void saveSceneAsset(string rootDir, string namePrefix) {
-		EditorApplication.SaveScene(ToUnityPath(Path.Combine(rootDir, namePrefix + ".unity")));
+		EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ToUnityPath(Path.Combine(rootDir, namePrefix + ".unity")));
 	}
 
 	static void importField(uint fileIndex, bool shouldAttachXGFieldNode) {
@@ -1024,7 +1022,7 @@ public class ImportXenogears : EditorWindow {
 		string namePrefix = "field" + fileIndex;
 
 		// Create Scene
-		EditorApplication.NewScene();
+		EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 		
 		uint diskIndex = 1; // there are disk 1 and disk 2
 		uint dirIndex = 11; // 0-based index
@@ -1038,7 +1036,7 @@ public class ImportXenogears : EditorWindow {
 		byte[] modelData = getData(archiveData, 2);
 		byte[] textureData = File.ReadAllBytes(texturePath);
 		
-		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
+		string prefabPath = ToUnityPath(Path.Combine(stageModelRoot, namePrefix + ".prefab"));
 
 		XGModel model = importFieldModel(modelData);
 		saveMeshAssets(model, stageMeshRoot, namePrefix);
@@ -1090,7 +1088,8 @@ public class ImportXenogears : EditorWindow {
 		}
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
 		
-		PrefabUtility.ReplacePrefab(gameObject, prefab, ReplacePrefabOptions.ConnectToPrefab);
+		wipePrefabEmbeddedAssets(prefabPath);
+		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
 
 		RenderSettings.ambientLight = Color.white;
 		
@@ -1696,12 +1695,12 @@ public class ImportXenogears : EditorWindow {
 		string filePath = ToUnityPath(Path.Combine( stagePath, "file" + (fileIndex * 2 + 2) + ".bin"));
 		string animPath = ToUnityPath(Path.Combine( stagePath, "file" + (fileIndex * 2 + 1) + ".bin"));
 
-		EditorApplication.NewScene();
+		EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 		
 		byte[] data = File.ReadAllBytes(filePath);
 		byte[] anim = File.ReadAllBytes(animPath);
 
-		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
+		string prefabPath = ToUnityPath(Path.Combine(stageModelRoot, namePrefix + ".prefab"));
 
 		XGModel model = importStageModel(data);	
 		saveMeshAssets(model, stageMeshRoot, namePrefix);
@@ -1758,7 +1757,8 @@ public class ImportXenogears : EditorWindow {
 		
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
 		
-		PrefabUtility.ReplacePrefab(gameObject, prefab, ReplacePrefabOptions.ConnectToPrefab);
+		wipePrefabEmbeddedAssets(prefabPath);
+		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
 		
 		RenderSettings.ambientLight = Color.white;
 		
@@ -1782,11 +1782,11 @@ public class ImportXenogears : EditorWindow {
 		string stagePath = ToUnityPath(Path.Combine( dataPath, Path.Combine( "disk" + diskIndex, "dir" + dirIndex)));
 		string filePath = ToUnityPath(Path.Combine( stagePath, "file" + (fileIndex * 2) + ".bin"));
 
-		EditorApplication.NewScene();
+		EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 		
 		byte[] data = File.ReadAllBytes(filePath);	
 
-		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
+		string prefabPath = ToUnityPath(Path.Combine(stageModelRoot, namePrefix + ".prefab"));
 
 		XGModel model = importStageModel(data);	
 		saveMeshAssets(model, stageMeshRoot, namePrefix);
@@ -1837,7 +1837,8 @@ public class ImportXenogears : EditorWindow {
 		
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
 		
-		PrefabUtility.ReplacePrefab(gameObject, prefab, ReplacePrefabOptions.ConnectToPrefab);
+		wipePrefabEmbeddedAssets(prefabPath);
+		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
 		
 		RenderSettings.ambientLight = Color.white;
 		
@@ -1849,6 +1850,7 @@ public class ImportXenogears : EditorWindow {
 		string stageModelRoot = createFolderIfNotExistent(stageRoot, "Model");
 		string stageSceneRoot = createFolderIfNotExistent(stageRoot, "Scene");
 		string stageTerrainRoot = createFolderIfNotExistent(stageRoot, "Terrain");
+		string stageTerrainLayerRoot = createFolderIfNotExistent(stageRoot, "TerrainLayer");
 		string stageTextureRoot = createFolderIfNotExistent(stageRoot, "Texture");
 
 		string namePrefix = "worldmap" + fileIndex;
@@ -1861,13 +1863,13 @@ public class ImportXenogears : EditorWindow {
 		string filePath = ToUnityPath(Path.Combine( terrainPath, "file" + 8 + ".bin"));
 		string texturePath = ToUnityPath(Path.Combine( terrainPath, "file" + 1 + ".bin"));
 
-		EditorApplication.NewScene();
+		EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
-		UnityEngine.Object prefab = createEmptyPrefab(stageModelRoot, namePrefix);
+		string prefabPath = ToUnityPath(Path.Combine(stageModelRoot, namePrefix + ".prefab"));
 		
 		byte[] data = File.ReadAllBytes(filePath);
 		byte[] textureData = loadLzs(texturePath);
-		SplatPrototype[] splatPrototypes = new SplatPrototype[16];
+		TerrainLayer[] terrainLayers = new TerrainLayer[16];
 		
 		for(uint ytex=0;ytex<4; ytex++) {
 			for(uint xtex=0; xtex<4; xtex++) {
@@ -1916,11 +1918,12 @@ public class ImportXenogears : EditorWindow {
 
 				Texture2D texture2d = (Texture2D)AssetDatabase.LoadMainAssetAtPath(imageFilePath);
 
-				SplatPrototype splatPrototype = new SplatPrototype();
-				splatPrototype.texture = texture2d;
-				splatPrototype.tileOffset = new Vector2(-ytex*64, -xtex*64); 
-				splatPrototype.tileSize = new Vector2(64, 64);
-				splatPrototypes[ytex*4+xtex] = splatPrototype;
+				TerrainLayer terrainLayer = new TerrainLayer();
+				terrainLayer.diffuseTexture = texture2d;
+				terrainLayer.tileOffset = new Vector2(-ytex*64, -xtex*64); 
+				terrainLayer.tileSize = new Vector2(64, 64);
+				AssetDatabase.CreateAsset(terrainLayer, ToUnityPath(Path.Combine(stageTerrainLayerRoot, namePrefix + "_terrainlayer" + (ytex*4+xtex) + ".terrainlayer")));
+				terrainLayers[ytex*4+xtex] = terrainLayer;
 			}
 		}
 
@@ -1958,7 +1961,7 @@ public class ImportXenogears : EditorWindow {
 		terrainData.size = new Vector3(256,16,256);
 		terrainData.SetHeights(0, 0, heights);
 		terrainData.alphamapResolution = 64;
-		terrainData.splatPrototypes = splatPrototypes;
+		terrainData.terrainLayers = terrainLayers;
 		
 		AssetDatabase.CreateAsset(terrainData, ToUnityPath(Path.Combine(stageTerrainRoot, namePrefix + "_terrain0.asset")));
 
@@ -1968,7 +1971,8 @@ public class ImportXenogears : EditorWindow {
 		TerrainCollider terrainCollider = (TerrainCollider)gameObject.AddComponent(typeof(TerrainCollider));
 		terrainCollider.terrainData = terrainData;
 
-		PrefabUtility.ReplacePrefab(gameObject, prefab, ReplacePrefabOptions.ConnectToPrefab);
+		wipePrefabEmbeddedAssets(prefabPath);
+		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
 		
 		// Need to save assets or the weights don't work
 		AssetDatabase.SaveAssets();
