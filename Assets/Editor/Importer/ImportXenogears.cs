@@ -1650,29 +1650,85 @@ public class ImportXenogears : EditorWindow {
 			items[i].transform.localRotation = rotationX * rotationY * rotationZ;
 		}
 		
-/*
 		// get animations
 		for(uint i=0; i<count3; i++) {
 			uint ofs4 = ofs2 + getUInt32LE (anim, ofs2 + 4 + i * 4);
 			uint siz4 = getUInt32LE (anim, ofs2 + 8 + i * 4) - getUInt32LE (anim, ofs2 + 4 + i * 4);
 			numBones = getUInt16LE(anim, ofs4);
-			// Debug.Log ("size:"+siz4);
-			// Debug.Log ("frames:"+ ((siz4 - 0x18) / 12) / numBones);
-			ushort[] test = new ushort[9];
-			string line = "line:";
-			for(uint j=01; j<9; j++) {
-				test[j] = getUInt16LE(anim, ofs4 + j * 2);
-				line += " " + test[j];
+
+			ushort flags = getUInt16LE(anim, ofs4 + 0x04);
+			ushort flags2 = getUInt16LE(anim, ofs4 + 0x06);
+			ushort rotCount = getUInt16LE(anim, ofs4 + 0x0C);
+			ushort transCount = getUInt16LE(anim, ofs4 + 0x0E);
+
+			bool rotFlag = (flags & 0x01) == 0;
+			bool transFlag = (flags & 0x02) == 0;
+			uint numFrames = (uint)(((siz4 - (0x18 + (flags2 == 0 ? ((rotCount + 1) * 6) : 0))) / ((rotFlag ? 6 : 0) + (transFlag ? 6 : 0))) / numBones);
+
+			uint ofs5 = ofs4 + 0x18;
+			if (flags2 == 0) {
+				ofs5 += (uint)((rotCount + 1) * 6);
 			}
-			Debug.Log (line);
-			ushort flags = getUInt16LE(anim, ofs4 + 4);
-			ushort rotCount = getUInt16LE(anim, ofs4 + 0xC);
-			ushort transCount = getUInt16LE(anim, ofs4 + 0xE);
-			Debug.Log ("flags:"+flags);
-			Debug.Log ("rotCount:"+rotCount);
-			Debug.Log ("transCount:"+transCount);
+
+			if (i == 0) {
+				ushort[] test = new ushort[9];
+				string line = "line:";
+				for(uint j=1; j<9; j++) {
+					test[j] = getUInt16LE(anim, ofs4 + j * 2);
+					line += " " + test[j];
+				}
+				Debug.Log (line);
+				Debug.Log ("size:" + siz4);
+				Debug.Log ("flags:"+flags);
+				Debug.Log ("flags2:"+flags2);
+				Debug.Log ("rotCount:"+rotCount);
+				Debug.Log ("transCount:"+transCount);
+				Debug.Log ("numFrames:"+ numFrames);
+			}
+
+			uint time;
+
+			time = 0;
+			for (uint i2 = 0; i2 < numFrames; i2 += 1) {
+				ushort rotNum = 0;
+				ushort transNum = 0;
+				for (uint i3 = 0; i3 < numBones; i3 += 1) {
+					short tx, ty, tz;
+					short rx, ry, rz;
+					tx = 0;
+					ty = 0;
+					tz = 0;
+					rx = 0;
+					ry = 0;
+					rz = 0;
+					bool bone_rotated = true;
+					bool bone_translated = true;
+
+					if (rotFlag && (rotNum < transCount)) {
+						rx = (short)getUInt16LE(anim, ofs5 + 0x00);
+						ry = (short)getUInt16LE(anim, ofs5 + 0x02);
+						rz = (short)getUInt16LE(anim, ofs5 + 0x04);
+						ofs5 += 0x6;
+						rotNum += 1;
+					}
+					else {
+						bone_rotated = false;
+					}
+
+					if (transFlag && (transNum < rotCount)) {
+						tx = (short)getUInt16LE(anim, ofs5 + 0x00);
+						ty = (short)getUInt16LE(anim, ofs5 + 0x02);
+						tz = (short)getUInt16LE(anim, ofs5 + 0x04);
+
+						ofs5 += 0x6;
+						transNum += 1;
+					}
+					else {
+						bone_translated = false;
+					}
+				}
+			}
 		}
-*/
 		
 		return animationClip;
 	}
