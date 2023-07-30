@@ -1625,8 +1625,6 @@ public class ImportXenogears : EditorWindow {
 	
 	static AnimationClip[] importAnimationClips(GameObject[] items, byte[] anim)
 	{
-		AnimationClip[] animationClip = new AnimationClip[0];
-		
 		uint ofs1 = getUInt32LE (anim, 4);
 		uint ofs2 = ofs1 + getUInt32LE (anim, ofs1 + 4);
 		uint count3 = getUInt32LE (anim, ofs2);
@@ -1649,6 +1647,8 @@ public class ImportXenogears : EditorWindow {
 			Quaternion rotationZ = Quaternion.Euler(0, 0, (float)rotZ * 360.0f / 4096.0f);
 			items[i].transform.localRotation = rotationX * rotationY * rotationZ;
 		}
+
+		AnimationClip[] animationClip = new AnimationClip[count3];
 		
 		// get animations
 		for(uint i=0; i<count3; i++) {
@@ -1686,7 +1686,32 @@ public class ImportXenogears : EditorWindow {
 				Debug.Log ("numFrames:"+ numFrames);
 			}
 
+			AnimationClip clip = new AnimationClip();
+			clip.name = "animation" + i;
+			clip.frameRate = 1;
+
+			clip.legacy = false;
+
 			uint time;
+
+			AnimationCurve[] curveTransX = new AnimationCurve[numBones];
+			AnimationCurve[] curveTransY = new AnimationCurve[numBones];
+			AnimationCurve[] curveTransZ = new AnimationCurve[numBones];
+
+			AnimationCurve[] curveRotX = new AnimationCurve[numBones];
+			AnimationCurve[] curveRotY = new AnimationCurve[numBones];
+			AnimationCurve[] curveRotZ = new AnimationCurve[numBones];
+			AnimationCurve[] curveRotW = new AnimationCurve[numBones];
+
+			for (uint i2 = 0; i2 < numBones; i2 += 1) {
+				curveTransX[i2] = new AnimationCurve();
+				curveTransY[i2] = new AnimationCurve();
+				curveTransZ[i2] = new AnimationCurve();
+				curveRotX[i2] = new AnimationCurve();
+				curveRotY[i2] = new AnimationCurve();
+				curveRotZ[i2] = new AnimationCurve();
+				curveRotW[i2] = new AnimationCurve();
+			}
 
 			time = 0;
 			for (uint i2 = 0; i2 < numFrames; i2 += 1) {
@@ -1701,33 +1726,53 @@ public class ImportXenogears : EditorWindow {
 					rx = 0;
 					ry = 0;
 					rz = 0;
-					bool bone_rotated = true;
-					bool bone_translated = true;
 
 					if (rotFlag && (rotNum < transCount)) {
 						rx = (short)getUInt16LE(anim, ofs5 + 0x00);
 						ry = (short)getUInt16LE(anim, ofs5 + 0x02);
 						rz = (short)getUInt16LE(anim, ofs5 + 0x04);
+						Quaternion rotationX = Quaternion.Euler((float)rx * 360.0f / 4096.0f, 0, 0);
+						Quaternion rotationY = Quaternion.Euler(0, (float)ry * 360.0f / 4096.0f, 0);
+						Quaternion rotationZ = Quaternion.Euler(0, 0, (float)rz * 360.0f / 4096.0f);
+						Quaternion rotationAll = rotationX * rotationY * rotationZ;
+						curveRotX[i3].AddKey(new Keyframe(time, rotationAll.x, 0, 0, 0, 0));
+						curveRotY[i3].AddKey(new Keyframe(time, rotationAll.y, 0, 0, 0, 0));
+						curveRotZ[i3].AddKey(new Keyframe(time, rotationAll.z, 0, 0, 0, 0));
+						curveRotW[i3].AddKey(new Keyframe(time, rotationAll.w, 0, 0, 0, 0));
 						ofs5 += 0x6;
 						rotNum += 1;
-					}
-					else {
-						bone_rotated = false;
 					}
 
 					if (transFlag && (transNum < rotCount)) {
 						tx = (short)getUInt16LE(anim, ofs5 + 0x00);
 						ty = (short)getUInt16LE(anim, ofs5 + 0x02);
 						tz = (short)getUInt16LE(anim, ofs5 + 0x04);
-
+						curveTransX[i3].AddKey(new Keyframe(time, (float)tx, 0, 0, 0, 0));
+						curveTransY[i3].AddKey(new Keyframe(time, (float)ty, 0, 0, 0, 0));
+						curveTransZ[i3].AddKey(new Keyframe(time, (float)tz, 0, 0, 0, 0));
 						ofs5 += 0x6;
 						transNum += 1;
 					}
-					else {
-						bone_translated = false;
-					}
+				}
+
+				time += 1;
+			}
+
+			for (uint i2 = 0; i2 < numBones; i2 += 1) {
+				if (transFlag) {
+					clip.SetCurve(items[i2].name, typeof(Transform), "localPosition.x", curveTransX[i2]);
+					clip.SetCurve(items[i2].name, typeof(Transform), "localPosition.y", curveTransY[i2]);
+					clip.SetCurve(items[i2].name, typeof(Transform), "localPosition.z", curveTransZ[i2]);
+				}
+				if (rotFlag) {
+					clip.SetCurve(items[i2].name, typeof(Transform), "localRotation.x", curveRotX[i2]);
+					clip.SetCurve(items[i2].name, typeof(Transform), "localRotation.y", curveRotY[i2]);
+					clip.SetCurve(items[i2].name, typeof(Transform), "localRotation.z", curveRotZ[i2]);
+					clip.SetCurve(items[i2].name, typeof(Transform), "localRotation.w", curveRotW[i2]);
 				}
 			}
+
+			animationClip[i] = clip;
 		}
 		
 		return animationClip;
