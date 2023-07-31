@@ -2247,17 +2247,8 @@ public class ImportXenogears : EditorWindow {
 	}
 	
 	static void importTim(int diskIndex, int dirIndex, int fileIndex, string name) {
-		string imageGuid = createFolderIfNotExistent("Assets", "Images");
-		if (imageGuid.Length == 0) {
-			imageGuid = AssetDatabase.CreateFolder("Assets", "Images");
-		} 
-		string imageRoot = AssetDatabase.GUIDToAssetPath(imageGuid);
-		
-		string imageGroupGuid = AssetDatabase.AssetPathToGUID (ToUnityPath(Path.Combine(imageRoot, name)));
-		if (imageGroupGuid.Length == 0) {
-			imageGroupGuid = AssetDatabase.CreateFolder(imageRoot, name);
-		} 
-		string imageGroupRoot = AssetDatabase.GUIDToAssetPath(imageGroupGuid);
+		string imageRoot = createFolderIfNotExistent("Assets", "Images");		
+		string imageGroupRoot = createFolderIfNotExistent(imageRoot, name);		
 		
 		string dataPath = ToUnityPath(Path.Combine( Path.Combine(Application.dataPath, ".."), "Data"));
 		string terrainPath = ToUnityPath(Path.Combine( dataPath, Path.Combine( "disk" + diskIndex, "dir" + dirIndex)));
