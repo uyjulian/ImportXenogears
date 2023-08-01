@@ -1012,7 +1012,8 @@ public class ImportXenogears : EditorWindow {
 	}
 
 	static void importField(uint fileIndex, bool shouldAttachXGFieldNode) {
-		string stageRoot = createFolderIfNotExistent("Assets", "Field");
+		string xenogearsRoot = createFolderIfNotExistent("Assets", "Xenogears");
+		string stageRoot = createFolderIfNotExistent(xenogearsRoot, "Field");
 		string stageModelRoot = createFolderIfNotExistent(stageRoot, "Model");
 		string stageSceneRoot = createFolderIfNotExistent(stageRoot, "Scene");
 		string stageMeshRoot = createFolderIfNotExistent(stageRoot, "Mesh");
@@ -1779,7 +1780,8 @@ public class ImportXenogears : EditorWindow {
 	}
 	
 	static void importSceneModel(uint fileIndex) {
-		string stageRoot = createFolderIfNotExistent("Assets", "SceneModel");
+		string xenogearsRoot = createFolderIfNotExistent("Assets", "Xenogears");
+		string stageRoot = createFolderIfNotExistent(xenogearsRoot, "SceneModel");
 		string stageModelRoot = createFolderIfNotExistent(stageRoot, "Model");
 		string stageSceneRoot = createFolderIfNotExistent(stageRoot, "Scene");
 		string stageMeshRoot = createFolderIfNotExistent(stageRoot, "Mesh");
@@ -1868,7 +1870,8 @@ public class ImportXenogears : EditorWindow {
 	}
 	
 	static void importStage(uint fileIndex) {
-		string stageRoot = createFolderIfNotExistent("Assets", "Stage");
+		string xenogearsRoot = createFolderIfNotExistent("Assets", "Xenogears");
+		string stageRoot = createFolderIfNotExistent(xenogearsRoot, "Stage");
 		string stageModelRoot = createFolderIfNotExistent(stageRoot, "Model");
 		string stageSceneRoot = createFolderIfNotExistent(stageRoot, "Scene");
 		string stageMeshRoot = createFolderIfNotExistent(stageRoot, "Mesh");
@@ -1948,7 +1951,8 @@ public class ImportXenogears : EditorWindow {
 	}
 
 	static void importTerrain(uint fileIndex) {
-		string stageRoot = createFolderIfNotExistent("Assets", "Worldmap");
+		string xenogearsRoot = createFolderIfNotExistent("Assets", "Xenogears");
+		string stageRoot = createFolderIfNotExistent(xenogearsRoot, "Worldmap");
 		string stageModelRoot = createFolderIfNotExistent(stageRoot, "Model");
 		string stageSceneRoot = createFolderIfNotExistent(stageRoot, "Scene");
 		string stageTerrainRoot = createFolderIfNotExistent(stageRoot, "Terrain");
@@ -2247,7 +2251,8 @@ public class ImportXenogears : EditorWindow {
 	}
 	
 	static void importTim(int diskIndex, int dirIndex, int fileIndex, string name) {
-		string imageRoot = createFolderIfNotExistent("Assets", "Images");		
+		string xenogearsRoot = createFolderIfNotExistent("Assets", "Xenogears");
+		string imageRoot = createFolderIfNotExistent(xenogearsRoot, "Images");
 		string imageGroupRoot = createFolderIfNotExistent(imageRoot, name);		
 		
 		string dataPath = ToUnityPath(Path.Combine( Path.Combine(Application.dataPath, ".."), "Data"));
