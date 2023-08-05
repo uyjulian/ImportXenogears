@@ -278,6 +278,13 @@ public class ImportXenogears : EditorWindow {
 		}
 	}
 
+	static void arr_deg_to_quat(float[] arr)
+	{
+		arr_normalize_deg(arr);
+		arr_deg_to_rad(arr);
+		arr_rad_to_quat(arr);
+	}
+
 	static XGModel importFieldModel(byte[] data) {
 		XGModel xgModel = new XGModel();
 		xgModel.meshes = new List<XGMesh>();
@@ -1142,9 +1149,7 @@ public class ImportXenogears : EditorWindow {
 			item.transform.localPosition = new Vector3(pos_x, pos_y, pos_z);
 			// Unity's euler angle to quaternion code is not giving the correct results, so do the calculation ourselves
 			float[] quat = new float[] {rot_x * 90.0f / 1024.0f, rot_y * 90.0f / 1024.0f, rot_z * 90.0f / 1024.0f, 0.0f};
-			arr_normalize_deg(quat);
-			arr_deg_to_rad(quat);
-			arr_rad_to_quat(quat);
+			arr_deg_to_quat(quat);
 			// Unity's Quaternion constructor is in xyzw order (not wxyz)
 			item.transform.localRotation = new Quaternion(quat[1], quat[2], quat[3], quat[0]);
 		}
@@ -1704,10 +1709,9 @@ public class ImportXenogears : EditorWindow {
 			short transZ = (short)getUInt16LE(anim, ofs3 + 0x18 + i * 12 + 10);
 			
 			items[i].transform.localPosition = new Vector3((float)transX, (float)transY, (float)transZ);
-			Quaternion rotationX = Quaternion.Euler((float)rotX * 360.0f / 4096.0f, 0, 0);
-			Quaternion rotationY = Quaternion.Euler(0, (float)rotY * 360.0f / 4096.0f, 0);
-			Quaternion rotationZ = Quaternion.Euler(0, 0, (float)rotZ * 360.0f / 4096.0f);
-			items[i].transform.localRotation = rotationX * rotationY * rotationZ;
+			float[] quat = new float[] {(float)rotX * 360.0f / 4096.0f, (float)rotY * 360.0f / 4096.0f, (float)rotZ * 360.0f / 4096.0f, 0.0f};
+			arr_deg_to_quat(quat);
+			items[i].transform.localRotation = new Quaternion(quat[1], quat[2], quat[3], quat[0]);
 		}
 
 		AnimationClip[] animationClip = new AnimationClip[count3];
@@ -1793,14 +1797,12 @@ public class ImportXenogears : EditorWindow {
 						rx = (short)getUInt16LE(anim, ofs5 + 0x00);
 						ry = (short)getUInt16LE(anim, ofs5 + 0x02);
 						rz = (short)getUInt16LE(anim, ofs5 + 0x04);
-						Quaternion rotationX = Quaternion.Euler((float)rx * 360.0f / 4096.0f, 0, 0);
-						Quaternion rotationY = Quaternion.Euler(0, (float)ry * 360.0f / 4096.0f, 0);
-						Quaternion rotationZ = Quaternion.Euler(0, 0, (float)rz * 360.0f / 4096.0f);
-						Quaternion rotationAll = rotationX * rotationY * rotationZ;
-						curveRotX[i3].AddKey(new Keyframe(time, rotationAll.x, 0, 0, 0, 0));
-						curveRotY[i3].AddKey(new Keyframe(time, rotationAll.y, 0, 0, 0, 0));
-						curveRotZ[i3].AddKey(new Keyframe(time, rotationAll.z, 0, 0, 0, 0));
-						curveRotW[i3].AddKey(new Keyframe(time, rotationAll.w, 0, 0, 0, 0));
+						float[] quat = new float[] {(float)rx * 360.0f / 4096.0f, (float)ry * 360.0f / 4096.0f, (float)rz * 360.0f / 4096.0f, 0.0f};
+						arr_deg_to_quat(quat);
+						curveRotX[i3].AddKey(new Keyframe(time, (float)(quat[1]), 0, 0, 0, 0));
+						curveRotY[i3].AddKey(new Keyframe(time, (float)(quat[2]), 0, 0, 0, 0));
+						curveRotZ[i3].AddKey(new Keyframe(time, (float)(quat[3]), 0, 0, 0, 0));
+						curveRotW[i3].AddKey(new Keyframe(time, (float)(quat[0]), 0, 0, 0, 0));
 						ofs5 += 0x6;
 						rotNum += 1;
 					}
