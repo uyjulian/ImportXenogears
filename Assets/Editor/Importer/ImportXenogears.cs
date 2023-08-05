@@ -244,6 +244,40 @@ public class ImportXenogears : EditorWindow {
 		}
 	}
 
+	static void arr_deg_to_rad(float[] arr)
+	{
+		for (var i = 0; i < arr.Length; i += 1)
+		{
+			arr[i] = (arr[i] / 360.0f) * (2.0f * (float)Math.PI);
+		}
+	}
+
+	static void arr_rad_to_quat(float[] arr)
+	{
+		var cy = (float)Math.Cos(arr[2] * 0.5f);
+		var sy = (float)Math.Sin(arr[2] * 0.5f);
+		var cp = (float)Math.Cos(arr[1] * 0.5f);
+		var sp = (float)Math.Sin(arr[1] * 0.5f);
+		var cr = (float)Math.Cos(arr[0] * 0.5f);
+		var sr = (float)Math.Sin(arr[0] * 0.5f);
+		arr[0] = cr * cp * cy + sr * sp * sy;
+		arr[1] = sr * cp * cy - cr * sp * sy;
+		arr[2] = cr * sp * cy + sr * cp * sy;
+		arr[3] = cr * cp * sy - sr * sp * cy;
+	}
+
+	static void arr_normalize_deg(float[] arr)
+	{
+		for (var i = 0; i < arr.Length; i += 1)
+		{
+			arr[i] %= 360.0f;
+			if (arr[i] < 0)
+			{
+				arr[i] += 360.0f;
+			}
+		}
+	}
+
 	static XGModel importFieldModel(byte[] data) {
 		XGModel xgModel = new XGModel();
 		xgModel.meshes = new List<XGMesh>();
@@ -1105,8 +1139,14 @@ public class ImportXenogears : EditorWindow {
 					renderer.materials = meshMaterials;
 				}
 			}
-			item.transform.Translate(pos_x, pos_y, pos_z);
-			item.transform.Rotate(rot_x * 90.0f / 1024.0f, rot_y * 90.0f / 1024.0f, rot_z * 90.0f / 1024.0f);
+			item.transform.localPosition = new Vector3(pos_x, pos_y, pos_z);
+			// Unity's euler angle to quaternion code is not giving the correct results, so do the calculation ourselves
+			float[] quat = new float[] {rot_x * 90.0f / 1024.0f, rot_y * 90.0f / 1024.0f, rot_z * 90.0f / 1024.0f, 0.0f};
+			arr_normalize_deg(quat);
+			arr_deg_to_rad(quat);
+			arr_rad_to_quat(quat);
+			// Unity's Quaternion constructor is in xyzw order (not wxyz)
+			item.transform.localRotation = new Quaternion(quat[1], quat[2], quat[3], quat[0]);
 		}
 		gameObject.transform.localScale = new Vector3(0.02f,0.02f,-0.02f);
 		gameObject.transform.localEulerAngles = new Vector3(-180,90,0);
