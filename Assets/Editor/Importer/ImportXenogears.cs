@@ -2533,7 +2533,7 @@ public class ImportXenogears : EditorWindow {
 		exportTerrain = EditorGUILayout.Toggle ("Import Terrain", exportTerrain);
 		exportTerrainIndices = EditorGUILayout.TextField ("Terrain Indices", exportTerrainIndices);
 		exportHeads = EditorGUILayout.Toggle ("Import Heads", exportHeads);
-		exportHeadIndices = EditorGUILayout.TextField ("Field Indices", exportHeadIndices);
+		exportHeadIndices = EditorGUILayout.TextField ("Head Indices", exportHeadIndices);
 		exportSlides = EditorGUILayout.Toggle ("Import Slides", exportSlides);
 		exportSlideIndices = EditorGUILayout.TextField ("Slide Indices", exportSlideIndices);
 		exportSceneModel = EditorGUILayout.Toggle ("Import Scene Models", exportSceneModel);
