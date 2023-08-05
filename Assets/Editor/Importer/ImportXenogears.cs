@@ -1061,10 +1061,19 @@ public class ImportXenogears : EditorWindow {
 			short pos_z = (short)getUInt16LE(archiveData, 0x0190 + itemIndex * 16 + 12);
 			ushort index = getUInt16LE(archiveData, 0x0190 + itemIndex * 16 + 14);
 			
-			GameObject item = new GameObject(namePrefix + "_item" + itemIndex);
-			item.transform.parent = gameObject.transform;
+			var itemName = namePrefix + "_item" + itemIndex;
+			Transform item = gameObject.transform.Find(itemName);
+			if (item == null) {
+				item = new GameObject(itemName).transform;
+			}
+			if (item.parent != gameObject.transform) {
+				item.SetParent(gameObject.transform);
+			}
 			if (shouldAttachXGFieldNode) {
-				XGFieldNode xgFieldNode = (XGFieldNode)item.AddComponent (typeof(XGFieldNode));
+				XGFieldNode xgFieldNode = item.gameObject.GetComponent<XGFieldNode>();
+				if (xgFieldNode == null) {
+					xgFieldNode = (XGFieldNode)item.gameObject.AddComponent (typeof(XGFieldNode));
+				}
 				xgFieldNode.flag = new bool[16];
 				for(int i=0; i<16; i++) {
 					xgFieldNode.flag[i] = (flags & (1<<i)) != 0;
@@ -1074,10 +1083,22 @@ public class ImportXenogears : EditorWindow {
 			if ((flags & ((1<<5)|(1<<6)/*|(1<<7)|(1<<8)*/)) == 0) {
 				XGMesh xgMesh = model.meshes[index]; 
 				for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
-					GameObject meshNode = new GameObject(namePrefix + "_item" + itemIndex + "_mesh" + ii);
-					meshNode.transform.parent = item.transform;
-					MeshFilter meshFilter = (MeshFilter)meshNode.AddComponent(typeof(MeshFilter));
-					MeshRenderer renderer = (MeshRenderer)meshNode.AddComponent(typeof(MeshRenderer));
+					var meshNodeName = namePrefix + "_item" + itemIndex + "_mesh" + ii;
+					Transform meshNode = item.Find(meshNodeName);
+					if (meshNode == null) {
+						meshNode = new GameObject(meshNodeName).transform;
+					}
+					if (meshNode.parent != item) {
+						meshNode.SetParent(item);
+					}
+					MeshFilter meshFilter = meshNode.gameObject.GetComponent<MeshFilter>();
+					if (meshFilter == null) {
+						meshFilter = (MeshFilter)meshNode.gameObject.AddComponent(typeof(MeshFilter));
+					}
+					MeshRenderer renderer = meshNode.gameObject.GetComponent<MeshRenderer>();
+					if (renderer == null) {
+						renderer = (MeshRenderer)meshNode.gameObject.AddComponent(typeof(MeshRenderer));
+					}
 					meshFilter.mesh = xgMesh.meshes[ii];
 					Material[] meshMaterials = new Material[1];
 					meshMaterials[0] = materials[xgMesh.materials[ii]];
@@ -1089,7 +1110,7 @@ public class ImportXenogears : EditorWindow {
 		}
 		gameObject.transform.localScale = new Vector3(0.02f,0.02f,-0.02f);
 		gameObject.transform.localEulerAngles = new Vector3(-180,90,0);
-		
+
 		wipePrefabEmbeddedAssets(prefabPath);
 		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
 
@@ -1832,23 +1853,38 @@ public class ImportXenogears : EditorWindow {
 		GameObject[] items = new GameObject[hierarchy.Count / 2];
 		
 		GameObject gameObject = new GameObject(namePrefix);
+
 		for(int itemIndex=0; itemIndex < items.Length; itemIndex++) {
-			GameObject item = new GameObject(namePrefix + "_item" + itemIndex);
+			var itemName = namePrefix + "_item" + itemIndex;
+			Transform item = gameObject.transform.Find(itemName);
+			if (item == null) {
+				item = new GameObject(itemName).transform;
+			}
 			int blockIndex = hierarchy[itemIndex*2+0];
 			if (blockIndex >= 0) {
 				XGMesh xgMesh = model.meshes[blockIndex]; 
 				for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
-					GameObject meshNode = new GameObject(namePrefix + "_item" + itemIndex + "_mesh" + ii);
-					meshNode.transform.parent = item.transform;
-					MeshFilter meshFilter = (MeshFilter)meshNode.AddComponent(typeof(MeshFilter));
-					MeshRenderer renderer = (MeshRenderer)meshNode.AddComponent(typeof(MeshRenderer));
+					var meshNodeName = namePrefix + "_item" + itemIndex + "_mesh" + ii;
+					Transform meshNode = item.Find(meshNodeName);
+					if (meshNode == null) {
+						meshNode = new GameObject(meshNodeName).transform;
+					}
+					meshNode.parent = item;
+					MeshFilter meshFilter = meshNode.gameObject.GetComponent<MeshFilter>();
+					if (meshFilter == null) {
+						meshFilter = (MeshFilter)meshNode.gameObject.AddComponent(typeof(MeshFilter));
+					}
+					MeshRenderer renderer = meshNode.gameObject.GetComponent<MeshRenderer>();
+					if (renderer == null) {
+						renderer = (MeshRenderer)meshNode.gameObject.AddComponent(typeof(MeshRenderer));
+					}
 					meshFilter.mesh = xgMesh.meshes[ii];
 					Material[] meshMaterials = new Material[1];
 					meshMaterials[0] = materials[xgMesh.materials[ii]];
 					renderer.materials = meshMaterials;
 				}
 			}
-			items[itemIndex] = item;
+			items[itemIndex] = item.gameObject;
 		}
 		
 		for(int itemIndex=0; itemIndex < items.Length; itemIndex++) {
@@ -1860,10 +1896,10 @@ public class ImportXenogears : EditorWindow {
 		saveAnimationAssets(animationClip, stageAnimationRoot, namePrefix);
 		
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
-		
+
 		wipePrefabEmbeddedAssets(prefabPath);
 		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
-		
+
 		RenderSettings.ambientLight = Color.white;
 		
 		saveSceneAsset(stageSceneRoot, namePrefix);
@@ -1918,21 +1954,36 @@ public class ImportXenogears : EditorWindow {
 		GameObject[] items = new GameObject[hierarchy.Count / 2];
 		
 		GameObject gameObject = new GameObject(namePrefix);
+
 		for(int itemIndex=0; itemIndex < items.Length; itemIndex++) {
-			XGMesh xgMesh = model.meshes[hierarchy[itemIndex*2+0]]; 
-			GameObject item = new GameObject(namePrefix + "_item" + itemIndex);
+			XGMesh xgMesh = model.meshes[hierarchy[itemIndex*2+0]];
+			var itemName = namePrefix + "_item" + itemIndex;
+			Transform item = gameObject.transform.Find(itemName);
+			if (item == null) {
+				item = new GameObject(itemName).transform;
+			}
 			for (int ii = 0; ii < xgMesh.meshes.Length; ii += 1) {
-				GameObject meshNode = new GameObject(namePrefix + "_item" + itemIndex + "_mesh" + ii);
-				meshNode.transform.parent = item.transform;
-				MeshFilter meshFilter = (MeshFilter)meshNode.AddComponent(typeof(MeshFilter));
-				MeshRenderer renderer = (MeshRenderer)meshNode.AddComponent(typeof(MeshRenderer));
+				var meshNodeName = namePrefix + "_item" + itemIndex + "_mesh" + ii;
+				Transform meshNode = item.Find(meshNodeName);
+				if (meshNode == null) {
+					meshNode = new GameObject(meshNodeName).transform;
+				}
+				meshNode.parent = item;
+				MeshFilter meshFilter = meshNode.gameObject.GetComponent<MeshFilter>();
+				if (meshFilter == null) {
+					meshFilter = (MeshFilter)meshNode.gameObject.AddComponent(typeof(MeshFilter));
+				}
+				MeshRenderer renderer = meshNode.gameObject.GetComponent<MeshRenderer>();
+				if (renderer == null) {
+					renderer = (MeshRenderer)meshNode.gameObject.AddComponent(typeof(MeshRenderer));
+				}
 				meshFilter.mesh = xgMesh.meshes[ii];
 				Material[] meshMaterials = new Material[1];
 				meshMaterials[0] = materials[xgMesh.materials[ii]];
 				renderer.materials = meshMaterials;
 			}
 			
-			items[itemIndex] = item;
+			items[itemIndex] = item.gameObject;
 		}
 		
 		for(int itemIndex=0; itemIndex < items.Length; itemIndex++) {
@@ -1941,10 +1992,10 @@ public class ImportXenogears : EditorWindow {
 		}
 		
 		gameObject.transform.localEulerAngles = new Vector3(180,0,0);
-		
+
 		wipePrefabEmbeddedAssets(prefabPath);
 		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
-		
+
 		RenderSettings.ambientLight = Color.white;
 		
 		saveSceneAsset(stageSceneRoot, namePrefix);
@@ -2071,15 +2122,22 @@ public class ImportXenogears : EditorWindow {
 		AssetDatabase.CreateAsset(terrainData, ToUnityPath(Path.Combine(stageTerrainRoot, namePrefix + "_terrain0.asset")));
 
 		GameObject gameObject = new GameObject(namePrefix);
-		Terrain terrain = (Terrain)gameObject.AddComponent(typeof(Terrain));
+
+		Terrain terrain = gameObject.GetComponent<Terrain>();
+		if (terrain == null) {
+			terrain = (Terrain)gameObject.AddComponent(typeof(Terrain));
+		}
 		terrain.terrainData = terrainData;
 		terrain.materialTemplate = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Standard.mat");
-		TerrainCollider terrainCollider = (TerrainCollider)gameObject.AddComponent(typeof(TerrainCollider));
+		TerrainCollider terrainCollider = gameObject.GetComponent<TerrainCollider>();
+		if (terrainCollider == null) {
+			terrainCollider = (TerrainCollider)gameObject.AddComponent(typeof(TerrainCollider));
+		}
 		terrainCollider.terrainData = terrainData;
 
 		wipePrefabEmbeddedAssets(prefabPath);
 		PrefabUtility.SaveAsPrefabAssetAndConnect(gameObject, prefabPath, InteractionMode.UserAction);
-		
+
 		// Need to save assets or the weights don't work
 		AssetDatabase.SaveAssets();
 
